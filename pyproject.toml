@@ -1,0 +1,46 @@
+[tool.poetry]
+name = "s1000d-rag"
+version = "0.1.0"
+description = "S1000D DM XML 기반 로컬 LLM RAG 파이프라인"
+authors = ["hskim"]
+package-mode = false
+
+[tool.poetry.dependencies]
+python = ">=3.11,<3.13"
+
+# LangChain
+langchain = ">=0.3"
+langchain-core = ">=0.3"
+langchain-community = ">=0.3"
+langchain-text-splitters = ">=0.3"
+langchain-huggingface = ">=0.1"
+huggingface-hub = ">=0.20"
+
+# LangGraph (향후 승격용)
+langgraph = ">=0.2"
+
+# XML Parsing
+lxml = ">=5.0"
+
+# LLM & Embeddings
+llama-cpp-python = ">=0.3"
+sentence-transformers = ">=3.0"
+transformers = ">=4.40"
+accelerate = ">=1.0"
+
+# Vector Store (추상화 - 초기 구현은 ChromaDB)
+langchain-chroma = ">=0.1"
+chromadb = ">=0.5"
+
+# Utilities
+python-dotenv = ">=1.0"
+pydantic = ">=2.0"
+tqdm = ">=4.60"
+
+# Testing
+pytest = ">=8.0"
+pytest-asyncio = ">=0.23"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
