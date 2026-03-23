@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html class="light" lang="ko">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>WinneAI | S1000D RAG</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<script>
+tailwind.config = {
+    darkMode: "class",
+    theme: {
+        extend: {
+            colors: {
+                "surface-container-low":"#f2f4f6","surface-container-lowest":"#ffffff",
+                "surface-bright":"#f7f9fb","surface-container":"#eceef0",
+                "surface-container-high":"#e6e8ea","surface-container-highest":"#e0e3e5",
+                "surface-dim":"#d8dadc","surface-variant":"#e0e3e5",
+                "primary":"#004ac6","primary-container":"#2563eb",
+                "primary-fixed":"#dbe1ff","primary-fixed-dim":"#b4c5ff",
+                "on-primary":"#ffffff","on-primary-container":"#eeefff",
+                "on-surface":"#191c1e","on-surface-variant":"#434655",
+                "outline":"#737686","outline-variant":"#c3c6d7",
+                "error":"#ba1a1a","error-container":"#ffdad6",
+                "secondary":"#495c95","secondary-container":"#acbfff",
+                "background":"#f7f9fb","surface":"#f7f9fb",
+                "inverse-surface":"#2d3133","inverse-on-surface":"#eff1f3",
+                "success":"#16a34a",
+            },
+            fontFamily: {
+                "headline":["Manrope","sans-serif"],
+                "body":["Manrope","sans-serif"],
+            },
+            borderRadius: {"DEFAULT":"0.25rem","lg":"0.5rem","xl":"0.75rem","full":"9999px"},
+        },
+    },
+}
+</script>
+<style>
+    body { font-family: 'Manrope', sans-serif; background-color: #f7f9fb; }
+    .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+    .glass-panel { background: rgba(255,255,255,0.7); backdrop-filter: blur(20px); }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #e0e3e5; border-radius: 10px; }
+    ::-webkit-scrollbar-thumb:hover { background: #c3c6d7; }
+    .msg-enter { animation: msgSlideIn 0.3s ease-out; }
+    @keyframes msgSlideIn {
+        from { opacity: 0; transform: translateY(12px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .typing-dots span { animation: typingPulse 1.2s ease-in-out infinite; }
+    .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+    .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+    /* Evidence accordion animation */
+    .evidence-body {
+        display: grid;
+        grid-template-rows: 0fr;
+        transition: grid-template-rows 0.3s ease;
+    }
+    .evidence-body.open {
+        grid-template-rows: 1fr;
+    }
+    .evidence-body > div {
+        overflow: hidden;
+    }
+    .evidence-chevron {
+        transition: transform 0.3s ease;
+    }
+    .evidence-chevron.open {
+        transform: rotate(180deg);
+    }
+    @keyframes typingPulse {
+        0%,100% { opacity: 0.3; transform: scale(0.8); }
+        50% { opacity: 1; transform: scale(1.2); }
+    }
+    /* Sessions drawer transition */
+    #sessions-panel {
+        transition: width 0.25s cubic-bezier(0.4,0,0.2,1), opacity 0.2s ease;
+    }
+    #sessions-panel.collapsed {
+        width: 0 !important;
+        opacity: 0;
+        overflow: hidden;
+        padding: 0;
+        border: none;
+    }
+</style>
+</head>
+<body class="text-on-surface overflow-hidden">
+<div class="flex h-screen overflow-hidden">
+
+<!-- ═══ SIDEBAR ═══ -->
+<aside id="sidebar" class="bg-surface-container-low h-screen w-72 flex flex-col p-4 gap-2 text-sm font-medium shrink-0">
+    <!-- Brand -->
+    <div class="flex items-center gap-3 px-2 mb-6">
+        <div class="w-10 h-10 rounded-xl bg-primary-container flex items-center justify-center text-white shadow-lg text-lg font-extrabold">W</div>
+        <div>
+            <h1 class="text-lg font-extrabold text-on-surface">WinneAI</h1>
+            <p class="text-[10px] text-on-surface-variant uppercase tracking-widest font-bold">Professional Assistant</p>
+        </div>
+    </div>
+
+    <!-- New Chat -->
+    <button onclick="createSession()" class="mb-4 w-full flex items-center gap-3 px-4 py-3 bg-primary-container text-white rounded-xl font-semibold shadow-sm hover:opacity-90 active:scale-95 transition-all">
+        <span class="material-symbols-outlined text-sm">add</span>
+        <span>New Chat</span>
+    </button>
+
+    <!-- Navigation -->
+    <nav class="space-y-1">
+        <a onclick="navigateTo('chat')" class="nav-link flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 cursor-pointer" data-page="chat">
+            <span class="material-symbols-outlined">chat</span><span>Chat</span>
+        </a>
+        <a onclick="navigateTo('library')" class="nav-link flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 cursor-pointer" data-page="library">
+            <span class="material-symbols-outlined">auto_stories</span><span>Library</span>
+        </a>
+        <a onclick="navigateTo('models')" class="nav-link flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 cursor-pointer" data-page="models">
+            <span class="material-symbols-outlined">psychology</span><span>Models</span>
+        </a>
+        <a onclick="navigateTo('settings')" class="nav-link flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 cursor-pointer" data-page="settings">
+            <span class="material-symbols-outlined">settings</span><span>Settings</span>
+        </a>
+    </nav>
+
+    <!-- Bottom -->
+    <div class="mt-auto pt-4 border-t border-outline-variant/10 space-y-1">
+        <a onclick="showToast('Privacy 기능은 준비 중입니다.')" class="flex items-center gap-3 px-4 py-2 text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer">
+            <span class="material-symbols-outlined text-sm">shield</span><span class="text-xs">Privacy</span>
+        </a>
+        <a onclick="showToast('Legal 기능은 준비 중입니다.')" class="flex items-center gap-3 px-4 py-2 text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer">
+            <span class="material-symbols-outlined text-sm">gavel</span><span class="text-xs">Legal</span>
+        </a>
+    </div>
+</aside>
+
+<!-- ═══ SESSIONS DRAWER ═══ -->
+<aside id="sessions-panel" class="w-72 bg-surface-container-low flex flex-col border-r border-outline-variant/10 shrink-0 h-screen collapsed">
+    <header class="p-4 pb-3">
+        <div class="flex items-center justify-between mb-3">
+            <h2 class="text-lg font-bold tracking-tight">Sessions</h2>
+            <button onclick="confirmDeleteAllSessions()" class="p-1.5 text-on-surface-variant hover:text-error hover:bg-error-container rounded-lg transition-colors" title="전체 삭제">
+                <span class="material-symbols-outlined text-sm">delete_sweep</span>
+            </button>
+        </div>
+        <div class="relative">
+            <span class="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-outline text-sm">search</span>
+            <input id="session-search" oninput="filterSessions()" class="w-full pl-10 pr-4 py-2 bg-surface-container-lowest rounded-xl border-none ring-1 ring-outline-variant/20 focus:ring-primary focus:ring-2 transition-all text-sm outline-none" placeholder="Search sessions..." type="text"/>
+        </div>
+    </header>
+    <div id="session-panel-list" class="flex-1 overflow-y-auto px-3 py-1 space-y-1">
+        <!-- JS renders session items grouped by date -->
+    </div>
+</aside>
+
+<!-- ═══ MAIN CONTENT ═══ -->
+<main class="flex-1 flex flex-col overflow-hidden">
+
+<!-- ── TopAppBar ── -->
+<header class="flex justify-between items-center w-full px-8 h-16 bg-surface/70 backdrop-blur-xl z-20 sticky top-0 shrink-0">
+    <div class="flex items-center gap-6 flex-1">
+        <span class="text-xl font-black tracking-tight text-on-surface">WinneAI</span>
+        <span id="status-badge" class="flex items-center gap-2 text-xs font-medium text-outline">
+            <span class="w-2 h-2 rounded-full bg-outline"></span>Loading...
+        </span>
+    </div>
+    <div class="flex items-center gap-2">
+        <button onclick="showToast('공유 기능은 준비 중입니다.')" class="p-2 text-on-surface-variant hover:bg-surface-container-high rounded-full transition-colors" title="Share">
+            <span class="material-symbols-outlined text-xl">share</span>
+        </button>
+        <button onclick="showToast('즐겨찾기 기능은 준비 중입니다.')" class="p-2 text-on-surface-variant hover:bg-surface-container-high rounded-full transition-colors" title="Favorite">
+            <span class="material-symbols-outlined text-xl">star</span>
+        </button>
+        <button onclick="clearChat()" class="p-2 text-on-surface-variant hover:bg-surface-container-high rounded-full transition-colors" title="Clear">
+            <span class="material-symbols-outlined text-xl">delete</span>
+        </button>
+    </div>
+</header>
+
+<!-- ══ PAGE: CHAT ══ -->
+<div id="page-chat" class="flex-1 flex overflow-hidden">
+    <!-- Chat Area -->
+    <div class="flex-1 flex flex-col overflow-hidden relative">
+        <!-- Sessions toggle -->
+        <button id="sessions-toggle-btn" onclick="toggleSessionsPanel()" class="absolute left-0 top-1/2 -translate-y-1/2 z-30 w-5 h-12 bg-surface-container-high/80 hover:bg-surface-container-highest rounded-r-lg flex items-center justify-center text-on-surface-variant hover:text-primary transition-all group" title="Sessions">
+            <span class="material-symbols-outlined text-sm transition-transform duration-200" id="sessions-toggle-icon">chevron_right</span>
+        </button>
+        <!-- Chat Canvas -->
+        <div id="chat-canvas" class="flex-1 overflow-y-auto px-8 py-6 space-y-8 max-w-4xl mx-auto w-full">
+            <!-- Empty State -->
+            <div id="empty-state" class="flex flex-col items-center justify-center py-20">
+                <div class="w-16 h-16 rounded-2xl bg-primary-container flex items-center justify-center text-white text-3xl font-extrabold shadow-lg shadow-primary/20 mb-5">W</div>
+                <h2 class="text-2xl font-extrabold text-primary mb-2">WinneAI</h2>
+                <p class="text-on-surface-variant text-center mb-8">S1000D 기술 교범 데이터 모듈에 대해 질문해 보세요.</p>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full max-w-2xl">
+                    <button onclick="askExample(this)" class="p-4 bg-surface-container-lowest border border-surface-container-high rounded-xl text-left hover:border-primary-fixed-dim hover:bg-primary-fixed/30 transition-all text-sm font-medium text-on-surface flex items-start gap-3">
+                        <span class="material-symbols-outlined text-primary text-lg shrink-0">auto_awesome</span>
+                        자전거의 주요 구성품은 무엇인가요?
+                    </button>
+                    <button onclick="askExample(this)" class="p-4 bg-surface-container-lowest border border-surface-container-high rounded-xl text-left hover:border-primary-fixed-dim hover:bg-primary-fixed/30 transition-all text-sm font-medium text-on-surface flex items-start gap-3">
+                        <span class="material-symbols-outlined text-primary text-lg shrink-0">psychology</span>
+                        브레이크 시스템 원리에 대해 알려줘
+                    </button>
+                    <button onclick="askExample(this)" class="p-4 bg-surface-container-lowest border border-surface-container-high rounded-xl text-left hover:border-primary-fixed-dim hover:bg-primary-fixed/30 transition-all text-sm font-medium text-on-surface flex items-start gap-3">
+                        <span class="material-symbols-outlined text-primary text-lg shrink-0">build</span>
+                        앞바퀴 설치 절차를 알려줘
+                    </button>
+                </div>
+            </div>
+        </div>
+        <!-- Input Area -->
+        <div class="px-8 pb-6 pt-2 bg-surface mt-auto shrink-0">
+            <div class="max-w-4xl mx-auto">
+                <div class="relative bg-surface-container-lowest shadow-[0_-10px_30px_rgba(25,28,30,0.03)] rounded-2xl p-4 flex flex-col gap-3 border border-outline-variant/10">
+                    <textarea id="chat-input" onkeydown="handleInputKey(event)" class="w-full bg-transparent border-none focus:ring-0 text-on-surface resize-none min-h-[50px] max-h-[150px] text-[15px] outline-none" placeholder="S1000D 기술 교범에 대해 질문하세요..." rows="1"></textarea>
+                    <div class="flex justify-between items-center border-t border-outline-variant/10 pt-3">
+                        <div class="flex items-center gap-1">
+                            <button onclick="showToast('파일 첨부 기능은 준비 중입니다.')" class="p-2 text-on-surface-variant hover:bg-surface-container-low rounded-lg transition-colors">
+                                <span class="material-symbols-outlined">attach_file</span>
+                            </button>
+                            <button onclick="showToast('음성 입력 기능은 준비 중입니다.')" class="p-2 text-on-surface-variant hover:bg-surface-container-low rounded-lg transition-colors">
+                                <span class="material-symbols-outlined">mic</span>
+                            </button>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span id="model-tag" class="text-xs text-on-surface-variant font-medium">Qwen3-14B</span>
+                            <button onclick="sendMessage()" id="send-btn" class="bg-primary-container text-white px-6 py-2.5 rounded-xl font-bold flex items-center gap-2 hover:shadow-lg active:scale-95 transition-all disabled:opacity-50" disabled>
+                                Send <span class="material-symbols-outlined text-sm" style="font-variation-settings:'FILL' 1;">send</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <p class="text-[10px] text-center text-on-surface-variant mt-3 opacity-60">WinneAI can make mistakes. Verify important information.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- ══ PAGE: LIBRARY ══ -->
+<div id="page-library" class="flex-1 overflow-y-auto hidden">
+    <div class="flex flex-col items-center justify-center h-full text-on-surface-variant">
+        <span class="material-symbols-outlined text-6xl mb-4 opacity-20">auto_stories</span>
+        <h2 class="text-xl font-bold text-on-surface mb-2">Library</h2>
+        <p class="text-sm">문서 라이브러리 기능을 준비 중입니다.</p>
+    </div>
+</div>
+
+<!-- ══ PAGE: MODELS ══ -->
+<div id="page-models" class="flex-1 overflow-y-auto hidden">
+    <div class="flex flex-col items-center justify-center h-full text-on-surface-variant">
+        <span class="material-symbols-outlined text-6xl mb-4 opacity-20">psychology</span>
+        <h2 class="text-xl font-bold text-on-surface mb-2">Models</h2>
+        <p class="text-sm">모델 관리 기능을 준비 중입니다.</p>
+    </div>
+</div>
+
+<!-- ══ PAGE: SETTINGS ══ -->
+<div id="page-settings" class="flex-1 overflow-y-auto hidden">
+    <div class="max-w-4xl mx-auto px-8 py-12 min-h-full flex flex-col justify-center">
+        <h2 class="text-2xl font-bold tracking-tight mb-1">Settings</h2>
+        <p class="text-on-surface-variant text-sm mb-8">RAG 파이프라인 파라미터를 조정합니다.</p>
+
+        <!-- Search Parameters -->
+        <div class="mb-8">
+            <h3 class="text-base font-bold text-on-surface mb-4 flex items-center gap-2">
+                <span class="material-symbols-outlined text-primary">search</span> Search (Retrieval)
+            </h3>
+            <div class="grid grid-cols-2 gap-6">
+                <div>
+                    <label class="text-sm font-semibold text-on-surface block mb-2">Top-K <span id="val-topk" class="text-primary font-bold">10</span></label>
+                    <input type="range" id="setting-topk" min="1" max="30" value="10" oninput="updateSettingLabel('topk',this.value)" class="w-full accent-primary"/>
+                </div>
+                <div>
+                    <label class="text-sm font-semibold text-on-surface block mb-2">Relevance Threshold <span id="val-threshold" class="text-primary font-bold">0.30</span></label>
+                    <input type="range" id="setting-threshold" min="0" max="100" value="30" step="5" oninput="updateSettingLabel('threshold',(this.value/100).toFixed(2))" class="w-full accent-primary"/>
+                </div>
+                <div>
+                    <label class="text-sm font-semibold text-on-surface block mb-2">Rerank Top-K <span id="val-rerank" class="text-primary font-bold">3</span></label>
+                    <input type="range" id="setting-rerank" min="1" max="10" value="3" oninput="updateSettingLabel('rerank',this.value)" class="w-full accent-primary"/>
+                </div>
+                <div>
+                    <label class="text-sm font-semibold text-on-surface block mb-2">Max Context <span id="val-maxctx" class="text-primary font-bold">10000</span></label>
+                    <input type="range" id="setting-maxctx" min="1000" max="30000" value="10000" step="1000" oninput="updateSettingLabel('maxctx',this.value)" class="w-full accent-primary"/>
+                </div>
+            </div>
+        </div>
+
+        <hr class="border-outline-variant/20 my-6"/>
+
+        <!-- LLM Parameters (read-only from server) -->
+        <div class="mb-8">
+            <h3 class="text-base font-bold text-on-surface mb-4 flex items-center gap-2">
+                <span class="material-symbols-outlined text-primary">psychology</span> LLM Generation
+                <span class="text-[10px] font-bold text-outline bg-surface-container px-2 py-0.5 rounded-full uppercase tracking-wider">Server Config</span>
+            </h3>
+            <div class="grid grid-cols-3 gap-4">
+                <div class="bg-surface-container-lowest border border-surface-container-high rounded-xl p-4">
+                    <div class="text-[10px] font-bold text-outline uppercase tracking-wider mb-1">Temperature</div>
+                    <div id="cfg-temperature" class="text-lg font-bold text-on-surface">-</div>
+                </div>
+                <div class="bg-surface-container-lowest border border-surface-container-high rounded-xl p-4">
+                    <div class="text-[10px] font-bold text-outline uppercase tracking-wider mb-1">Top-P</div>
+                    <div id="cfg-top-p" class="text-lg font-bold text-on-surface">-</div>
+                </div>
+                <div class="bg-surface-container-lowest border border-surface-container-high rounded-xl p-4">
+                    <div class="text-[10px] font-bold text-outline uppercase tracking-wider mb-1">Repeat Penalty</div>
+                    <div id="cfg-repeat-penalty" class="text-lg font-bold text-on-surface">-</div>
+                </div>
+                <div class="bg-surface-container-lowest border border-surface-container-high rounded-xl p-4">
+                    <div class="text-[10px] font-bold text-outline uppercase tracking-wider mb-1">Max Tokens</div>
+                    <div id="cfg-max-tokens" class="text-lg font-bold text-on-surface">-</div>
+                </div>
+                <div class="bg-surface-container-lowest border border-surface-container-high rounded-xl p-4">
+                    <div class="text-[10px] font-bold text-outline uppercase tracking-wider mb-1">Context Window</div>
+                    <div id="cfg-n-ctx" class="text-lg font-bold text-on-surface">-</div>
+                </div>
+            </div>
+        </div>
+
+        <hr class="border-outline-variant/20 my-6"/>
+
+        <!-- System Info -->
+        <div class="mb-8">
+            <h3 class="text-base font-bold text-on-surface mb-4 flex items-center gap-2">
+                <span class="material-symbols-outlined text-primary">info</span> System Info
+            </h3>
+            <div class="grid grid-cols-3 gap-4">
+                <div class="bg-surface-container-lowest border border-surface-container-high rounded-xl p-5 text-center">
+                    <div class="text-[10px] font-bold text-outline uppercase tracking-wider mb-2">LLM Model</div>
+                    <div id="info-llm" class="text-sm font-semibold text-on-surface">-</div>
+                </div>
+                <div class="bg-surface-container-lowest border border-surface-container-high rounded-xl p-5 text-center">
+                    <div class="text-[10px] font-bold text-outline uppercase tracking-wider mb-2">Embedding</div>
+                    <div id="info-embed" class="text-sm font-semibold text-on-surface">-</div>
+                </div>
+                <div class="bg-surface-container-lowest border border-surface-container-high rounded-xl p-5 text-center">
+                    <div class="text-[10px] font-bold text-outline uppercase tracking-wider mb-2">Index</div>
+                    <div id="info-index" class="text-sm font-semibold text-on-surface">-</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Version -->
+        <div class="text-center mt-8">
+            <span class="inline-flex items-center gap-2 px-4 py-1.5 bg-primary-fixed text-primary rounded-full text-xs font-bold uppercase tracking-wider">
+                WinneAI v1.0.0
+            </span>
+        </div>
+    </div>
+</div>
+
+</main>
+</div>
+
+<!-- Confirm Dialog -->
+<div id="confirm-overlay" class="fixed inset-0 bg-black/30 backdrop-blur-sm z-50 flex items-center justify-center transition-opacity duration-200 opacity-0 pointer-events-none">
+    <div class="bg-surface-container-lowest rounded-2xl shadow-2xl p-6 w-full max-w-sm mx-4 transform scale-95 transition-transform duration-200" id="confirm-box">
+        <div class="flex items-center gap-3 mb-4">
+            <div class="w-10 h-10 rounded-full bg-error-container flex items-center justify-center">
+                <span class="material-symbols-outlined text-error">delete</span>
+            </div>
+            <h3 class="text-lg font-bold text-on-surface">세션 삭제</h3>
+        </div>
+        <p id="confirm-msg" class="text-sm text-on-surface-variant mb-6">이 세션을 삭제하시겠습니까?</p>
+        <div class="flex justify-end gap-3">
+            <button onclick="closeConfirm()" class="px-4 py-2 text-sm font-semibold text-on-surface-variant hover:bg-surface-container-high rounded-xl transition-colors">취소</button>
+            <button onclick="executeConfirm()" class="px-4 py-2 text-sm font-semibold text-white bg-error rounded-xl hover:opacity-90 active:scale-95 transition-all">삭제</button>
+        </div>
+    </div>
+</div>
+
+<!-- Toast -->
+<div id="toast" class="fixed bottom-6 right-6 bg-inverse-surface text-inverse-on-surface px-5 py-3 rounded-xl shadow-lg text-sm font-medium z-50 transition-all duration-300 opacity-0 translate-y-4 pointer-events-none">
+    <span id="toast-msg"></span>
+</div>
+
+<script src="/static/app.js"></script>
+</body>
+</html>
