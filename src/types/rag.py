@@ -36,6 +36,9 @@ class RerankOptions(BaseModel):
 
 class RagOptions(BaseModel):
     top_k: int = 10
+    relevance_threshold: float = 0.3
     rerank: RerankOptions = RerankOptions()
     max_context_chars: int = 10000
     rewrite_query: bool = False
+    expand_query: bool = True
+    sns_filter: bool = True

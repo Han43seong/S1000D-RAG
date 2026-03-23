@@ -12,6 +12,7 @@ class DmFilter(BaseModel):
     dm_type: Optional[DmType] = None
     security: Optional[str] = None
     language: Optional[str] = None
+    model_ident_code: Optional[str] = None  # 모델식별코드 필터 (예: "S1000DBIKE")
 
 
 class CsdbAdapter(ABC):

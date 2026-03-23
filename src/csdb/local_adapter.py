@@ -17,7 +17,9 @@ class LocalCsdbAdapter(CsdbAdapter):
         """디렉터리에서 DMC-*.xml 파일을 스캔하여 DMC 목록 반환."""
         xml_files = sorted(self.root_dir.glob("DMC-*.xml"))
         dmcs = [f.stem for f in xml_files]
-        # TODO: filters 적용 (XML 내부 파싱 필요)
+        if filters and filters.model_ident_code:
+            prefix = f"DMC-{filters.model_ident_code}-"
+            dmcs = [d for d in dmcs if d.startswith(prefix)]
         return dmcs
 
     async def get_data_module_xml(self, dmc: str) -> str:
