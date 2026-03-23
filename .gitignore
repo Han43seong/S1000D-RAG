@@ -13,6 +13,14 @@ models/
 # Data
 chroma_db/
 test-data/bike-sample/*.xml
+export/
+
+# Docs (large S1000D spec/schema files)
+docs/S1000D*/
+docs/Specification/
+
+# Stitch design assets
+_stitch_screenshots/
 
 # Environment
 .env

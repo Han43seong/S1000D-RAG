@@ -6,7 +6,7 @@ S1000D Data Module XML을 파싱하여 구조적 청킹 → 벡터 인덱싱 →
 
 ## 기술 스택
 - **언어**: Python 3.11
-- **LLM**: `Konan-LLM-OND` (GGUF Q8_0, LlamaCpp)
+- **LLM**: `Qwen3-14B` (GGUF Q4_K_M, LlamaCpp)
 - **Embedding**: `dragonkue/BGE-m3-ko` (HuggingFace)
 - **Reranker**: `bge-reranker-v2-m3-ko` (CrossEncoder, 옵션)
 - **NLI**: `mDeBERTa-v3-base-nli` (답변 검증용, 향후)
@@ -37,9 +37,11 @@ D:\S1000D-RAG\
 │   │   ├── chunker.py         # content_blocks 기반 청킹 엔진
 │   │   └── indexer.py         # 벡터 인덱스 저장 (LangChain Document)
 │   ├── rag/
-│   │   ├── retriever.py       # 벡터 검색 + 메타 필터
+│   │   ├── retriever.py       # 벡터 검색 + 메타 필터 + SNS 2단계 검색
 │   │   ├── reranker.py        # CrossEncoder 리랭커 hook (on/off)
 │   │   ├── pipeline.py        # run_rag_query() 메인 함수
+│   │   ├── query_enhancer.py  # 한→영 쿼리 확장 + SNS 코드 추출
+│   │   ├── prompt.py          # 프롬프트 템플릿 (대화 이력 지원)
 │   │   └── models.py          # LLM/임베딩/리랭커 싱글턴 관리
 │   └── graph/
 │       ├── state.py           # LangGraph 상태 정의
@@ -73,11 +75,12 @@ D:\S1000D-RAG\
 - [x] Phase 0: 프로젝트 초기화 (디렉터리, pyproject.toml, 모델)
 - [x] Phase 1: Pydantic 타입 시스템 (DM JSON, Chunk, RAG 결과)
 - [x] Phase 2: CSDB Adapter (인터페이스 + 로컬 어댑터)
-- [ ] Phase 3: DM Parser / Normalizer (lxml 기반 XML → DM JSON)
-- [ ] Phase 4: Chunker & Indexer
-- [ ] Phase 5: RAG Pipeline (run_rag_query)
-- [ ] Phase 6: LangGraph 승격 구조
-- [ ] Phase 7: 테스트 & 검증
+- [x] Phase 3: DM Parser / Normalizer (lxml 기반 XML → DM JSON)
+- [x] Phase 4: Chunker & Indexer
+- [x] Phase 5: RAG Pipeline (run_rag_query)
+- [ ] Phase 6: LangGraph 승격 구조 (보류 - LangChain 구조 우선)
+- [x] Phase 7: 테스트 & 검증 (86 tests, 80 DM 파싱 100%)
+- [x] Phase 8: RAG 업그레이드 (쿼리 확장, SNS 2단계 검색, 대화 이력, Qwen3-14B)
 
 ## 참고
 - 기존 프로젝트: `D:\RAG-proj` (Python PDF 기반, 레퍼런스용)
