@@ -230,7 +230,7 @@ function renderSessionPanel() {
     const nonEmpty = sessions.filter(s => !s.is_archived && s.messages && s.messages.length > 0);
 
     if (!nonEmpty.length) {
-        container.innerHTML = '<p class="text-sm text-on-surface-variant p-4 text-center">대화 이력이 없습니다.</p>';
+        container.innerHTML = '<p class="text-[15px] text-on-surface-variant p-4 text-center">대화 이력이 없습니다.</p>';
         return;
     }
 
@@ -250,7 +250,7 @@ function renderSessionPanel() {
     });
 
     container.innerHTML = Object.entries(groups).map(([label, items]) => `
-        <div class="text-[10px] font-bold text-outline tracking-widest uppercase px-2 mb-2 mt-3">${label}</div>
+        <div class="text-[11px] font-bold text-outline tracking-widest uppercase px-2 mb-2 mt-3">${label}</div>
         ${items.map(s => {
             const isActive = s.id === activeSessionId;
             const cls = isActive
@@ -260,16 +260,16 @@ function renderSessionPanel() {
             return `
                 <div class="${cls}" onclick="switchSession('${s.id}')">
                     <div class="flex justify-between items-center mb-1">
-                        <span class="text-[9px] font-bold text-primary px-1.5 py-0.5 bg-primary-fixed rounded uppercase">Q&A</span>
+                        <span class="text-[10px] font-bold text-primary px-1.5 py-0.5 bg-primary-fixed rounded uppercase">Q&A</span>
                         <div class="flex items-center gap-1">
-                            <span class="text-[10px] text-on-surface-variant">${s.relative_time}</span>
+                            <span class="text-[11px] text-on-surface-variant">${s.relative_time}</span>
                             <button onclick="event.stopPropagation();confirmDeleteSession('${s.id}')" class="p-0.5 text-on-surface-variant hover:text-error rounded transition-colors opacity-0 group-hover:opacity-100 ${isActive ? 'opacity-100' : ''}">
                                 <span class="material-symbols-outlined text-sm">close</span>
                             </button>
                         </div>
                     </div>
-                    <div class="text-sm ${titleCls} line-clamp-1">${escapeHtml(s.title)}</div>
-                    <div class="text-xs text-on-surface-variant line-clamp-1 mt-0.5">${escapeHtml(s.preview)}</div>
+                    <div class="text-[15px] ${titleCls} line-clamp-1">${escapeHtml(s.title)}</div>
+                    <div class="text-[13px] text-on-surface-variant line-clamp-1 mt-0.5">${escapeHtml(s.preview)}</div>
                 </div>
             `;
         }).join('')}
@@ -284,7 +284,7 @@ function filterSessions() {
         (s.title.toLowerCase().includes(q) || s.preview.toLowerCase().includes(q))
     );
     if (!filtered.length) {
-        container.innerHTML = '<p class="text-sm text-on-surface-variant p-4 text-center">검색 결과가 없습니다.</p>';
+        container.innerHTML = '<p class="text-[15px] text-on-surface-variant p-4 text-center">검색 결과가 없습니다.</p>';
         return;
     }
     container.innerHTML = filtered.map(s => {
@@ -296,16 +296,16 @@ function filterSessions() {
         return `
             <div class="${cls}" onclick="switchSession('${s.id}')">
                 <div class="flex justify-between items-center mb-1">
-                    <span class="text-[9px] font-bold text-primary px-1.5 py-0.5 bg-primary-fixed rounded uppercase">Q&A</span>
+                    <span class="text-[10px] font-bold text-primary px-1.5 py-0.5 bg-primary-fixed rounded uppercase">Q&A</span>
                     <div class="flex items-center gap-1">
-                        <span class="text-[10px] text-on-surface-variant">${s.relative_time}</span>
+                        <span class="text-[11px] text-on-surface-variant">${s.relative_time}</span>
                         <button onclick="event.stopPropagation();confirmDeleteSession('${s.id}')" class="p-0.5 text-on-surface-variant hover:text-error rounded transition-colors opacity-0 group-hover:opacity-100 ${isActive ? 'opacity-100' : ''}">
                             <span class="material-symbols-outlined text-sm">close</span>
                         </button>
                     </div>
                 </div>
-                <div class="text-sm ${titleCls} line-clamp-1">${escapeHtml(s.title)}</div>
-                <div class="text-xs text-on-surface-variant line-clamp-1 mt-0.5">${escapeHtml(s.preview)}</div>
+                <div class="text-[15px] ${titleCls} line-clamp-1">${escapeHtml(s.title)}</div>
+                <div class="text-[13px] text-on-surface-variant line-clamp-1 mt-0.5">${escapeHtml(s.preview)}</div>
             </div>
         `;
     }).join('');
@@ -408,7 +408,7 @@ function appendUserMessage(text) {
     div.innerHTML = `
         <div class="w-9 h-9 rounded-full bg-primary-container flex items-center justify-center text-white text-sm font-bold shrink-0">U</div>
         <div class="bg-primary text-white p-5 rounded-2xl rounded-tr-none max-w-xl shadow-lg shadow-primary/10">
-            <p class="leading-relaxed text-[15px]">${escapeHtml(text)}</p>
+            <p class="leading-relaxed text-base">${escapeHtml(text)}</p>
         </div>
     `;
     canvas.appendChild(div);
@@ -426,20 +426,20 @@ function appendAIMessage(text, evidences, llmSec) {
             const pct = (ev.score * 100).toFixed(0);
             const scoreColor = ev.score >= 0.6 ? 'text-success bg-success/10' : ev.score >= 0.45 ? 'text-amber-600 bg-amber-100' : 'text-outline bg-surface-container';
             return `
-                <div class="flex items-center gap-2 flex-wrap text-xs">
+                <div class="flex items-center gap-2 flex-wrap text-[13px]">
                     <span class="bg-primary text-white px-2 py-0.5 rounded-full font-bold">#${ev.rank}</span>
                     <span class="font-mono font-semibold text-on-surface">${escapeHtml(ev.dmc)}</span>
                     <span class="${scoreColor} px-2 py-0.5 rounded-full font-bold">${pct}%</span>
                     ${ev.dm_type ? `<span class="bg-surface-container px-1.5 py-0.5 rounded text-on-surface-variant">${ev.dm_type}</span>` : ''}
                 </div>
-                ${ev.text ? `<p class="text-xs text-on-surface-variant line-clamp-2 mt-1">${escapeHtml(ev.text)}</p>` : ''}
+                ${ev.text ? `<p class="text-[13px] text-on-surface-variant line-clamp-2 mt-1">${escapeHtml(ev.text)}</p>` : ''}
             `;
         }).join('<hr class="border-outline-variant/10 my-2"/>');
 
         const evId = 'ev-' + Date.now() + Math.random().toString(36).slice(2, 6);
         evidenceHtml = `
             <div class="mt-4 bg-surface-container-lowest border border-outline-variant/10 rounded-xl overflow-hidden">
-                <button onclick="toggleEvidence('${evId}')" class="w-full px-4 py-2.5 text-xs font-semibold text-on-surface-variant cursor-pointer hover:bg-surface-container-low flex items-center gap-2">
+                <button onclick="toggleEvidence('${evId}')" class="w-full px-4 py-2.5 text-[13px] font-semibold text-on-surface-variant cursor-pointer hover:bg-surface-container-low flex items-center gap-2">
                     <span class="material-symbols-outlined text-sm">description</span>
                     참고 문서 (${evidences.length}건)
                     <span class="material-symbols-outlined text-sm ml-auto evidence-chevron" id="${evId}-chevron">expand_more</span>
@@ -454,7 +454,7 @@ function appendAIMessage(text, evidences, llmSec) {
     }
 
     const metricsHtml = llmSec > 0
-        ? `<div class="flex items-center gap-3 mt-3 text-[11px] text-outline">
+        ? `<div class="flex items-center gap-3 mt-3 text-[12px] text-outline">
                <span class="material-symbols-outlined text-xs">psychology</span> 추론 ${llmSec.toFixed(1)}s
            </div>`
         : '';
@@ -468,9 +468,9 @@ function appendAIMessage(text, evidences, llmSec) {
         </div>
         <div class="flex-1 max-w-3xl">
             <div class="bg-surface-container-lowest p-6 rounded-2xl shadow-[0_10px_30px_rgba(25,28,30,0.04)] border border-outline-variant/10">
-                <div class="prose prose-sm text-on-surface leading-relaxed text-[15px]">${formattedText}</div>
+                <div class="prose text-on-surface leading-relaxed text-base">${formattedText}</div>
                 <div class="flex gap-2 mt-4">
-                    <button onclick="copyText(this)" class="px-3 py-1.5 bg-surface-container-high rounded-lg text-xs font-semibold hover:bg-surface-container-highest transition-colors flex items-center gap-1.5">
+                    <button onclick="copyText(this)" class="px-3 py-1.5 bg-surface-container-high rounded-lg text-[13px] font-semibold hover:bg-surface-container-highest transition-colors flex items-center gap-1.5">
                         <span class="material-symbols-outlined text-xs">content_copy</span> Copy
                     </button>
                 </div>
@@ -521,7 +521,18 @@ function toggleEvidence(id) {
 
 function copyText(btn) {
     const text = btn.closest('.bg-surface-container-lowest').querySelector('.prose').textContent;
-    navigator.clipboard.writeText(text);
+    if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text);
+    } else {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+    }
     btn.innerHTML = '<span class="material-symbols-outlined text-xs">check</span> Copied';
     setTimeout(() => {
         btn.innerHTML = '<span class="material-symbols-outlined text-xs">content_copy</span> Copy';
