@@ -9,6 +9,7 @@ let activeSessionId = null;
 let sessions = [];
 let isSending = false;
 let sessionsPanelOpen = false;
+let activeJobId = null;
 
 // ── Settings defaults ──
 const settings = {
@@ -368,7 +369,7 @@ async function sendMessage() {
             activeSessionId = sess.id;
         }
 
-        const res = await fetch('/api/chat', {
+        const res = await fetch('/api/chat/jobs', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -384,18 +385,64 @@ async function sendMessage() {
         if (!res.ok) {
             throw new Error(data.detail || `서버 오류 (${res.status})`);
         }
+        activeJobId = data.job_id;
+        updateTypingIndicator(typingId, jobProgressMessage(data));
+        const completed = await pollChatJob(data.job_id, typingId);
         removeTypingIndicator(typingId);
-        appendAIMessage(data.answer, data.evidences || [], data.llm_sec || 0);
+        appendAIMessage(completed.answer || '', completed.evidences || [], completed.llm_sec || 0);
         await loadSessions();
     } catch (e) {
         removeTypingIndicator(typingId);
         appendAIMessage(`오류가 발생했습니다. ${escapeHtml(e.message || '서버 상태를 확인하세요.')}`, [], 0);
         console.error('Chat error:', e);
     } finally {
+        activeJobId = null;
         clearTimeout(slowNoticeTimer);
         await loadStatus();
         isSending = false;
         updateSendButton();
+    }
+}
+
+async function pollChatJob(jobId, typingId) {
+    while (true) {
+        await sleep(1200);
+        const res = await fetch(`/api/chat/jobs/${jobId}`);
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+            throw new Error(data.detail || `작업 상태 조회 실패 (${res.status})`);
+        }
+        updateTypingIndicator(typingId, jobProgressMessage(data));
+        await loadStatus();
+        if (data.status === 'done') return data;
+        if (data.status === 'cancelled') throw new Error('답변 생성이 취소되었습니다.');
+        if (data.status === 'error') throw new Error(data.error || '답변 생성 중 오류가 발생했습니다.');
+    }
+}
+
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function jobProgressMessage(job) {
+    const labels = {
+        queued: '질문을 접수했습니다. 로컬 모델 실행 순서를 기다리는 중입니다.',
+        retrieving: 'S1000D 문서를 검색 중입니다.',
+        reranking: '후보 문서를 재정렬 중입니다.',
+        generating: '로컬 LLM이 답변을 생성 중입니다. CPU-only 27B에서는 1~2분 이상 걸릴 수 있습니다.',
+        done: '답변 생성이 완료되었습니다.',
+        cancelled: '답변 생성이 취소되었습니다.',
+        error: '답변 생성 중 오류가 발생했습니다.',
+    };
+    return labels[job.progress] || labels[job.status] || '작업을 처리 중입니다.';
+}
+
+async function cancelActiveJob() {
+    if (!activeJobId) return;
+    try {
+        await fetch(`/api/chat/jobs/${activeJobId}`, { method: 'DELETE' });
+    } catch (e) {
+        console.error('Cancel job failed:', e);
     }
 }
 
@@ -517,6 +564,9 @@ function showTypingIndicator() {
                 <span class="w-2 h-2 rounded-full bg-primary-container"></span>
             </div>
             <p class="typing-note hidden mt-3 text-[13px] text-on-surface-variant max-w-md"></p>
+            <button onclick="cancelActiveJob()" class="mt-3 px-3 py-1.5 bg-surface-container-high rounded-lg text-[12px] font-semibold hover:bg-surface-container-highest transition-colors">
+                취소
+            </button>
         </div>
     `;
     canvas.appendChild(div);

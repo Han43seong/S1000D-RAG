@@ -49,6 +49,8 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(me
 app = FastAPI(title="WinneAI", version="1.0.0")
 _chat_lock = asyncio.Lock()
 _chat_state = {"busy": False, "started_at": None, "question": None}
+chat_jobs: dict[str, dict] = {}
+_active_job_id: str | None = None
 
 
 @app.on_event("startup")
@@ -174,6 +176,20 @@ class ChatResponse(BaseModel):
     answer: str
     evidences: list[EvidenceResponse] = []
     llm_sec: float = 0
+
+
+class ChatJobResponse(BaseModel):
+    job_id: str
+    session_id: str
+    question: str
+    status: str
+    progress: str
+    answer: str | None = None
+    evidences: list[EvidenceResponse] = []
+    llm_sec: float = 0
+    error: str | None = None
+    created_at: str
+    updated_at: str
 
 
 class SessionResponse(BaseModel):
@@ -365,6 +381,114 @@ def _chat_sync(req: ChatRequest) -> ChatResponse:
     session["updated_at"] = datetime.now().isoformat()
 
     return ChatResponse(answer=result.answer, evidences=evidences, llm_sec=llm_sec)
+
+
+def _job_response(job: dict) -> ChatJobResponse:
+    return ChatJobResponse(
+        job_id=job["job_id"],
+        session_id=job["session_id"],
+        question=job["question"],
+        status=job["status"],
+        progress=job["progress"],
+        answer=job.get("answer"),
+        evidences=job.get("evidences") or [],
+        llm_sec=job.get("llm_sec") or 0,
+        error=job.get("error"),
+        created_at=job["created_at"],
+        updated_at=job["updated_at"],
+    )
+
+
+def _schedule_chat_job(job_id: str) -> None:
+    asyncio.create_task(_run_chat_job(job_id))
+
+
+async def _run_chat_job(job_id: str) -> None:
+    global _active_job_id
+    job = chat_jobs[job_id]
+    _active_job_id = job_id
+    job["status"] = "running"
+    job["progress"] = "generating"
+    job["updated_at"] = datetime.now().isoformat()
+    try:
+        if job.get("cancel_requested"):
+            job["status"] = "cancelled"
+            job["progress"] = "cancelled"
+            return
+        result = await chat(ChatRequest(**job["request"]))
+        if job.get("cancel_requested"):
+            job["status"] = "cancelled"
+            job["progress"] = "cancelled"
+            return
+        job["status"] = "done"
+        job["progress"] = "done"
+        job["answer"] = result.answer
+        job["evidences"] = result.evidences
+        job["llm_sec"] = result.llm_sec
+    except Exception as exc:  # pragma: no cover - defensive runtime path
+        logger.exception("Chat job failed: %s", job_id)
+        job["status"] = "error"
+        job["progress"] = "error"
+        job["error"] = str(exc)
+    finally:
+        job["updated_at"] = datetime.now().isoformat()
+        if _active_job_id == job_id:
+            _active_job_id = None
+
+
+@app.post("/api/chat/jobs", status_code=202)
+async def create_chat_job(req: ChatRequest) -> ChatJobResponse:
+    global _active_job_id
+    if _active_job_id is not None:
+        raise HTTPException(
+            status_code=409,
+            detail="모델이 이미 답변을 생성 중입니다. 현재 작업이 끝난 뒤 다시 질문하세요.",
+        )
+    job_id = str(uuid.uuid4())[:8]
+    now = datetime.now().isoformat()
+    job = {
+        "job_id": job_id,
+        "session_id": req.session_id,
+        "question": req.question,
+        "request": req.model_dump(),
+        "status": "queued",
+        "progress": "queued",
+        "answer": None,
+        "evidences": [],
+        "llm_sec": 0,
+        "error": None,
+        "cancel_requested": False,
+        "created_at": now,
+        "updated_at": now,
+    }
+    chat_jobs[job_id] = job
+    _active_job_id = job_id
+    _schedule_chat_job(job_id)
+    return _job_response(job)
+
+
+@app.get("/api/chat/jobs/{job_id}")
+async def get_chat_job(job_id: str) -> ChatJobResponse:
+    job = chat_jobs.get(job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Chat job not found")
+    return _job_response(job)
+
+
+@app.delete("/api/chat/jobs/{job_id}")
+async def cancel_chat_job(job_id: str) -> ChatJobResponse:
+    job = chat_jobs.get(job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Chat job not found")
+    if job["status"] in {"queued", "running"}:
+        job["cancel_requested"] = True
+        job["status"] = "cancelled"
+        job["progress"] = "cancelled"
+        job["updated_at"] = datetime.now().isoformat()
+        global _active_job_id
+        if _active_job_id == job_id:
+            _active_job_id = None
+    return _job_response(job)
 
 
 # ── Sessions API ──
