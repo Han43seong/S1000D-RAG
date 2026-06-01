@@ -9,6 +9,7 @@ from pathlib import Path
 
 import pytest
 
+from src.config import S1000D_DATA_DIR
 from src.parser.dm_parser import parse_dm_xml
 from src.parser.normalizer import (
     BlockIdGenerator,
@@ -21,7 +22,7 @@ from src.parser.normalizer import (
 from src.types.dm import ContentBlockRole, DmType
 
 # ── 테스트 데이터 경로 ──
-SAMPLE_DIR = Path(__file__).resolve().parent.parent / "docs" / "S1000D Issue 6 Bike Sample Data Set" / "Bike Data Set for Release number 6 R2"
+SAMPLE_DIR = S1000D_DATA_DIR
 
 # Descriptive DM
 DESC_DM_FILE = SAMPLE_DIR / "DMC-BRAKE-AAA-DA1-00-00-00AA-041A-A_004-00_EN-US.XML"

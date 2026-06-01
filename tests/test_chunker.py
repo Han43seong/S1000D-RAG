@@ -9,12 +9,13 @@ from pathlib import Path
 
 import pytest
 
+from src.config import S1000D_DATA_DIR
 from src.chunker.chunker import ChunkingOptions, chunk_dm, _sliding_window_chunk
 from src.chunker.indexer import chunks_to_documents
 from src.parser.dm_parser import parse_dm_xml
 from src.types.dm import ContentBlock, ContentBlockRole, DmType, S1000DDmJson
 
-SAMPLE_DIR = Path(__file__).resolve().parent.parent / "docs" / "S1000D Issue 6 Bike Sample Data Set" / "Bike Data Set for Release number 6 R2"
+SAMPLE_DIR = S1000D_DATA_DIR
 DESC_DM_FILE = SAMPLE_DIR / "DMC-BRAKE-AAA-DA1-00-00-00AA-041A-A_004-00_EN-US.XML"
 PROC_SIMPLE_FILE = SAMPLE_DIR / "DMC-BRAKE-AAA-DA1-00-00-00AA-341A-A_004-00_EN-US.XML"
 PROC_COMPLEX_FILE = SAMPLE_DIR / "DMC-S1000DBIKE-AAA-D00-00-00-00AA-258A-A_011-00_EN-US.XML"

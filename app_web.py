@@ -26,7 +26,6 @@ from pydantic import BaseModel
 from src.config import (
     CHROMA_COLLECTION_NAME,
     CHROMA_PERSIST_DIR,
-    GGUF_MODEL_PATH,
     LLM_MAX_TOKENS,
     LLM_N_CTX,
     LLM_REPEAT_PENALTY,
@@ -50,11 +49,17 @@ app = FastAPI(title="WinneAI", version="1.0.0")
 
 
 @app.on_event("startup")
-async def _preload_models():
-    """서버 시작 시 모델 사전 로드."""
-    logger.info("Preloading models...")
-    _get_models()
-    logger.info("Models ready.")
+async def _log_model_config():
+    """서버 시작 시 모델을 로드하지 않고 선택된 프로필만 로깅."""
+    from src.runtime.model_registry import get_model_runtime_config
+
+    cfg = get_model_runtime_config()
+    logger.info(
+        "Model config selected: backend=%s text_profile=%s vlm_profile=%s",
+        cfg.backend,
+        cfg.text_profile.name,
+        cfg.vlm_profile.name,
+    )
 
 
 app.add_middleware(
@@ -184,6 +189,12 @@ class StatusResponse(BaseModel):
     embedding_model: str
     chunk_count: int
     ready: bool
+    backend: str
+    text_profile: str
+    text_repo_id: str
+    vlm_profile: str
+    vlm_repo_id: str
+    reranker_model: str
 
 
 class ConfigResponse(BaseModel):
@@ -215,13 +226,22 @@ async def index():
 
 @app.get("/api/status")
 async def get_status() -> StatusResponse:
-    model_name = Path(GGUF_MODEL_PATH).stem
+    from src.runtime.model_registry import get_model_runtime_config
+
+    cfg = get_model_runtime_config()
+    model_name = Path(cfg.text_model_path).stem if cfg.text_model_path else cfg.text_profile.display_name
     chunk_count = _get_chunk_count()
     return StatusResponse(
         model_name=model_name,
-        embedding_model="BGE-m3-ko",
+        embedding_model=cfg.embedding.model,
         chunk_count=chunk_count,
         ready=chunk_count > 0,
+        backend=cfg.backend,
+        text_profile=cfg.text_profile.name,
+        text_repo_id=cfg.text_profile.repo_id,
+        vlm_profile=cfg.vlm_profile.name,
+        vlm_repo_id=cfg.vlm_profile.repo_id,
+        reranker_model=cfg.reranker.model,
     )
 
 

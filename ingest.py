@@ -1,37 +1,150 @@
 """S1000D DM XML 인제스천 CLI.
 
 사용법:
-    python ingest.py [XML_DIR] [--chroma-dir DIR] [--collection NAME]
+    python ingest.py [XML_DIR] [--data-dir DIR] [--chroma-dir DIR] [--collection NAME]
 
 기본값:
-    XML_DIR = docs/S1000D Issue 6 Bike Sample Data Set/Bike Data Set for Release number 6 R2
+    XML_DIR = src.config.S1000D_DATA_DIR
 """
 
 from __future__ import annotations
 
 import argparse
+import shutil
+import importlib.util
 import sys
 import time
+from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
-from src.chunker.chunker import ChunkingOptions, chunk_dm
-from src.chunker.indexer import chunks_to_documents, build_chroma_index
-from src.config import CHROMA_COLLECTION_NAME, CHROMA_PERSIST_DIR, PROJECT_ROOT
+from src.config import CHROMA_COLLECTION_NAME, CHROMA_PERSIST_DIR, PROJECT_ROOT, S1000D_DATA_DIR
 from src.csdb.adapter import DmFilter
 from src.csdb.local_adapter import LocalCsdbAdapter
 from src.parser.dm_parser import parse_dm_xml
-from src.rag.models import get_embeddings
 from src.types.chunk import S1000DChunk
 
-DEFAULT_XML_DIR = PROJECT_ROOT / "docs" / "S1000D Issue 6 Bike Sample Data Set" / "Bike Data Set for Release number 6 R2"
+
+def _load_chunker_symbols() -> tuple[Any, Any]:
+    """Load chunker.py without importing src.chunker.__init__ (which needs LangChain)."""
+    chunker_path = PROJECT_ROOT / "src" / "chunker" / "chunker.py"
+    spec = importlib.util.spec_from_file_location("s1000d_ingest_chunker", chunker_path)
+    if spec is None or spec.loader is None:
+        raise ImportError(f"Unable to load chunker module from {chunker_path}")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module.ChunkingOptions, module.chunk_dm
+
+
+ChunkingOptions, chunk_dm = _load_chunker_symbols()
+
+DEFAULT_XML_DIR = S1000D_DATA_DIR
+
+
+@dataclass(frozen=True)
+class IngestScanResult:
+    data_dir: Path
+    dm_file_count: int
+    parse_success_count: int
+    parse_error_count: int
+    chunk_count: int
+    parse_errors: list[str]
+
+
+def _list_dmcs(adapter: LocalCsdbAdapter, model_ident_code: str | None, limit: int | None) -> list[str]:
+    import asyncio
+
+    dm_filter = DmFilter(model_ident_code=model_ident_code) if model_ident_code else None
+    dmcs = asyncio.run(adapter.list_data_modules(dm_filter))
+    if limit is not None:
+        dmcs = dmcs[:limit]
+    return dmcs
+
+
+def _parse_dmcs(
+    adapter: LocalCsdbAdapter,
+    dmcs: list[str],
+    chunk_options: Any,
+    *,
+    collect_chunks: bool,
+) -> tuple[list[S1000DChunk], list[str]]:
+    import asyncio
+
+    all_chunks: list[S1000DChunk] = []
+    parse_errors: list[str] = []
+
+    for dmc in dmcs:
+        try:
+            xml_str = asyncio.run(adapter.get_data_module_xml(dmc))
+            dm_json = parse_dm_xml(xml_str)
+            chunks = chunk_dm(dm_json, chunk_options)
+            if collect_chunks:
+                all_chunks.extend(chunks)
+            print(f"  ✓ {dmc} → {len(dm_json.content_blocks)} blocks → {len(chunks)} chunks")
+        except Exception as e:
+            parse_errors.append(f"{dmc}: {e}")
+            print(f"  ✗ {dmc}: {e}")
+
+    return all_chunks, parse_errors
+
+
+def scan_data_modules(
+    xml_dir: Path,
+    chunk_options: Any | None = None,
+    model_ident_code: str | None = None,
+    limit: int | None = None,
+    *,
+    collect_chunks: bool = False,
+) -> IngestScanResult:
+    """Scan and parse DMs without loading embeddings or touching ChromaDB."""
+    adapter = LocalCsdbAdapter(xml_dir)
+    opts = chunk_options or ChunkingOptions()
+    dmcs = _list_dmcs(adapter, model_ident_code, limit)
+    print(f"[dry-run] Data dir: {xml_dir}")
+    print(f"[dry-run] DM file count: {len(dmcs)}")
+
+    all_chunks, parse_errors = _parse_dmcs(adapter, dmcs, opts, collect_chunks=collect_chunks)
+    success_count = len(dmcs) - len(parse_errors)
+    print(f"[dry-run] Parse success count: {success_count}")
+    print(f"[dry-run] Parse error count: {len(parse_errors)}")
+
+    return IngestScanResult(
+        data_dir=xml_dir,
+        dm_file_count=len(dmcs),
+        parse_success_count=success_count,
+        parse_error_count=len(parse_errors),
+        chunk_count=len(all_chunks),
+        parse_errors=parse_errors,
+    )
+
+
+def _reset_chroma_dir(chroma_dir: str | Path) -> None:
+    """Safely remove only the selected Chroma persist directory."""
+    target = Path(chroma_dir).expanduser().resolve()
+    forbidden = {
+        Path("/").resolve(),
+        Path.home().resolve(),
+        PROJECT_ROOT.resolve(),
+        (PROJECT_ROOT / "docs").resolve(),
+    }
+    if target in forbidden or target == target.parent:
+        raise ValueError(f"Refusing to reset unsafe Chroma directory: {target}")
+    if target.exists():
+        if not target.is_dir():
+            raise ValueError(f"Chroma path is not a directory: {target}")
+        shutil.rmtree(target)
+    target.mkdir(parents=True, exist_ok=True)
 
 
 def ingest(
     xml_dir: Path,
     chroma_dir: str = CHROMA_PERSIST_DIR,
     collection_name: str = CHROMA_COLLECTION_NAME,
-    chunk_options: ChunkingOptions | None = None,
+    chunk_options: Any | None = None,
     model_ident_code: str | None = None,
+    limit: int | None = None,
+    reset_index: bool = False,
 ) -> int:
     """XML 디렉터리를 스캔하여 인제스천 실행.
 
@@ -42,9 +155,7 @@ def ingest(
     opts = chunk_options or ChunkingOptions()
 
     # 1. DM 목록 스캔
-    import asyncio
-    dm_filter = DmFilter(model_ident_code=model_ident_code) if model_ident_code else None
-    dmcs = asyncio.run(adapter.list_data_modules(dm_filter))
+    dmcs = _list_dmcs(adapter, model_ident_code, limit)
     print(f"[1/4] {len(dmcs)}개 DM 파일 발견")
 
     if not dmcs:
@@ -52,19 +163,7 @@ def ingest(
         return 0
 
     # 2. 파싱 + 청킹
-    all_chunks: list[S1000DChunk] = []
-    parse_errors: list[str] = []
-
-    for dmc in dmcs:
-        try:
-            xml_str = asyncio.run(adapter.get_data_module_xml(dmc))
-            dm_json = parse_dm_xml(xml_str)
-            chunks = chunk_dm(dm_json, opts)
-            all_chunks.extend(chunks)
-            print(f"  ✓ {dmc} → {len(dm_json.content_blocks)} blocks → {len(chunks)} chunks")
-        except Exception as e:
-            parse_errors.append(f"{dmc}: {e}")
-            print(f"  ✗ {dmc}: {e}")
+    all_chunks, parse_errors = _parse_dmcs(adapter, dmcs, opts, collect_chunks=True)
 
     print(f"[2/4] 파싱 완료: {len(all_chunks)} chunks ({len(parse_errors)} errors)")
 
@@ -73,14 +172,21 @@ def ingest(
         return 0
 
     # 3. Document 변환
+    from src.chunker.indexer import chunks_to_documents, build_chroma_index
+
     documents = chunks_to_documents(all_chunks)
     print(f"[3/4] {len(documents)}개 Document 변환 완료")
 
     # 4. 임베딩 + ChromaDB 인덱싱
+    if reset_index:
+        _reset_chroma_dir(chroma_dir)
+        print(f"[4/4] 기존 ChromaDB 디렉터리 초기화 완료: {chroma_dir}")
     print("[4/4] 임베딩 모델 로딩 + ChromaDB 인덱싱...")
     t0 = time.time()
+    from src.rag.models import get_embeddings
+
     embedding_fn = get_embeddings()
-    vectorstore = build_chroma_index(
+    build_chroma_index(
         documents=documents,
         embedding_fn=embedding_fn,
         persist_directory=chroma_dir,
@@ -103,6 +209,15 @@ def ingest(
     return len(all_chunks)
 
 
+def _resolve_xml_dir(positional_xml_dir: str | None, data_dir: str | None) -> Path:
+    # Explicit --data-dir wins over the backward-compatible positional XML_DIR.
+    if data_dir:
+        return Path(data_dir)
+    if positional_xml_dir:
+        return Path(positional_xml_dir)
+    return DEFAULT_XML_DIR
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         description="S1000D DM XML 인제스천 CLI"
@@ -110,8 +225,29 @@ def main() -> None:
     parser.add_argument(
         "xml_dir",
         nargs="?",
-        default=str(DEFAULT_XML_DIR),
-        help="DM XML 파일이 있는 디렉터리 경로",
+        default=None,
+        help="DM XML 파일이 있는 디렉터리 경로 (하위 호환용 positional 인자)",
+    )
+    parser.add_argument(
+        "--data-dir",
+        default=None,
+        help="DM XML 파일이 있는 디렉터리 경로 (--data-dir가 positional XML_DIR보다 우선)",
+    )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="임베딩/ChromaDB 없이 DM 스캔과 XML 파싱까지만 수행",
+    )
+    parser.add_argument(
+        "--limit",
+        type=int,
+        default=None,
+        help="처리할 DM 개수 제한 (빠른 스모크 테스트용)",
+    )
+    parser.add_argument(
+        "--reset-index",
+        action="store_true",
+        help="인덱싱 전에 선택된 ChromaDB 영속화 디렉터리만 안전하게 삭제",
     )
     parser.add_argument(
         "--chroma-dir",
@@ -150,7 +286,11 @@ def main() -> None:
 
     args = parser.parse_args()
 
-    xml_dir = Path(args.xml_dir)
+    if args.limit is not None and args.limit < 0:
+        print("Error: --limit은 0 이상이어야 합니다.")
+        sys.exit(1)
+
+    xml_dir = _resolve_xml_dir(args.xml_dir, args.data_dir)
     if not xml_dir.is_dir():
         print(f"Error: 디렉터리를 찾을 수 없습니다: {xml_dir}")
         sys.exit(1)
@@ -161,12 +301,23 @@ def main() -> None:
         overlap=args.overlap,
     )
 
+    if args.dry_run:
+        result = scan_data_modules(
+            xml_dir=xml_dir,
+            chunk_options=chunk_opts,
+            model_ident_code=args.model_ident,
+            limit=args.limit,
+        )
+        sys.exit(0 if result.dm_file_count > 0 and result.parse_success_count > 0 else 1)
+
     total = ingest(
         xml_dir=xml_dir,
         chroma_dir=args.chroma_dir,
         collection_name=args.collection,
         chunk_options=chunk_opts,
         model_ident_code=args.model_ident,
+        limit=args.limit,
+        reset_index=args.reset_index,
     )
 
     sys.exit(0 if total > 0 else 1)

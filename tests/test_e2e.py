@@ -12,6 +12,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
+from src.config import S1000D_DATA_DIR
 from langchain_core.documents import Document
 
 from src.chunker.chunker import ChunkingOptions, chunk_dm
@@ -22,7 +23,7 @@ from src.rag.pipeline import run_rag_query_sync
 from src.rag.retriever import MetaFilter, retrieve
 from src.types.rag import RagOptions, RerankOptions
 
-SAMPLE_DIR = Path(__file__).resolve().parent.parent / "docs" / "S1000D Issue 6 Bike Sample Data Set" / "Bike Data Set for Release number 6 R2"
+SAMPLE_DIR = S1000D_DATA_DIR
 
 
 def _skip_if_no_samples():
