@@ -14,6 +14,23 @@ class Evidence(BaseModel):
     dm_type: Optional[DmType] = None
     security: Optional[str] = None
     applicability: Optional[str] = None
+    # Optional API/UI bridge fields.  Keeping these nullable preserves existing
+    # text-only callers while allowing visual-caption evidence to be serialized
+    # without a separate model/index dependency.
+    chunk_index: Optional[str] = None
+    id: Optional[str] = None
+    final_score: Optional[float] = None
+    rank: Optional[int] = None
+    modality: Optional[str] = None
+    content_role: Optional[str] = None
+    asset_key: Optional[str] = None
+    asset_path: Optional[str] = None
+    caption_path: Optional[str] = None
+    title: Optional[str] = None
+    kind: Optional[str] = None
+    ref_id: Optional[str] = None
+    display_label: Optional[str] = None
+    source_label: Optional[str] = None
 
 
 class RagResult(BaseModel):
