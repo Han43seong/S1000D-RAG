@@ -180,6 +180,8 @@ def _make_chunk(
             "block_count": len(blocks),
             "block_ids": [b.id for b in blocks],
             "role_distribution": role_counts,
+            "source_file": dm.meta.get("source_file", ""),
+            "source_path": dm.meta.get("source_path", ""),
         },
     )
 

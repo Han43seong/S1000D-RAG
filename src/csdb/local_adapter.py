@@ -51,3 +51,7 @@ class LocalCsdbAdapter(CsdbAdapter):
         """DMC에 해당하는 XML 파일 읽기."""
         xml_path = self._resolve_xml_path(dmc)
         return xml_path.read_text(encoding="utf-8")
+
+    def get_data_module_path(self, dmc: str) -> Path:
+        """Return the local XML path for a DMC without reading its contents."""
+        return self._resolve_xml_path(dmc)

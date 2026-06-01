@@ -7,61 +7,104 @@ Document 변환과 인덱스 저장/로드 인터페이스만 담당한다.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
-from langchain_core.documents import Document
+import json
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, Any
 
 from src.config import CHROMA_COLLECTION_NAME, CHROMA_PERSIST_DIR
 from src.types.chunk import S1000DChunk
 
 if TYPE_CHECKING:
+    from langchain_core.documents import Document
     from langchain_core.embeddings import Embeddings
     from langchain_core.vectorstores import VectorStore
+
+
+@dataclass(frozen=True)
+class LightweightDocument:
+    """Small LangChain-compatible stand-in for dependency-light tests.
+
+    Production indexing environments should have ``langchain_core`` installed,
+    in which case :func:`chunks_to_documents` returns real LangChain Documents.
+    """
+
+    page_content: str
+    metadata: dict[str, Any]
 
 
 def _extract_sns_code(dmc: str) -> str:
     """DMC에서 SNS 코드 추출.
 
-    예: "S1000DBIKE-AAA-DA1-00-00-00AA-041A-A" → "DA1"
+    예: "DMC-S1000DBIKE-AAA-DA1-00-00-00AA-041A-A" → "DA1"
+        "S1000DBIKE-AAA-DA1-00-00-00AA-041A-A" → "DA1"
         "BRAKE-AAA-DA1-00-00-00AA-341A-A" → "DA1"
     """
     parts = dmc.split("-")
+    if parts and parts[0].casefold() == "dmc":
+        return parts[3] if len(parts) >= 4 else ""
     return parts[2] if len(parts) >= 3 else ""
 
 
-def chunks_to_documents(chunks: list[S1000DChunk]) -> list[Document]:
+def _primitive_metadata_value(value: Any) -> str | int | float | bool:
+    """Return a Chroma-compatible primitive metadata value.
+
+    Chroma metadata values must be primitive scalars. S1000D evidence fields
+    such as block IDs and role distributions are still valuable, so structured
+    values are JSON encoded deterministically instead of dropped.
+    """
+    if value is None:
+        return ""
+    if isinstance(value, (bool, int, float, str)):
+        return value
+    return json.dumps(value, ensure_ascii=False, sort_keys=True)
+
+
+def build_chunk_metadata(chunk: S1000DChunk) -> dict[str, str | int | float | bool]:
+    """Build normalized, Chroma-compatible S1000D text chunk metadata."""
+    raw_metadata: dict[str, Any] = {
+        "dmc": chunk.dmc,
+        "chunk_id": chunk.chunk_id,
+        "dm_type": chunk.dm_type.value,
+        "security": chunk.security,
+        "applicability": chunk.applicability,
+        "sns_code": chunk.metadata.get("sns_code") or _extract_sns_code(chunk.dmc),
+        "issue": chunk.metadata.get("issue", ""),
+        "language": chunk.metadata.get("language", ""),
+        "title": chunk.metadata.get("title", ""),
+        "structure_path_range": chunk.structure_path_range,
+        "block_ids": chunk.metadata.get("block_ids", []),
+        "role_distribution": chunk.metadata.get("role_distribution", {}),
+        "source_file": chunk.metadata.get("source_file") or chunk.metadata.get("source_path", ""),
+        "source_path": chunk.metadata.get("source_path") or chunk.metadata.get("source_file", ""),
+        "modality": "text",
+    }
+    if "block_count" in chunk.metadata:
+        raw_metadata["block_count"] = chunk.metadata["block_count"]
+    return {key: _primitive_metadata_value(value) for key, value in raw_metadata.items()}
+
+
+def _document_class() -> type:
+    try:
+        from langchain_core.documents import Document
+
+        return Document
+    except ImportError:
+        return LightweightDocument
+
+
+def chunks_to_documents(chunks: list[S1000DChunk]) -> list["Document"]:
     """S1000DChunk 리스트를 LangChain Document 리스트로 변환.
 
-    Document.metadata에 벡터 검색 시 필터링 가능한 필드를 포함:
-    - dmc, chunk_id (PK)
-    - dm_type, security, applicability, sns_code (필터)
-    - structure_path_range, title, issue, language (보조 정보)
+    Document.metadata에 벡터 검색/표시에 필요한 S1000D 근거 필드를 포함한다.
+    LangChain이 설치되지 않은 테스트 환경에서는 동일 속성을 가진
+    LightweightDocument를 반환한다.
     """
+    document_cls = _document_class()
     docs: list[Document] = []
     for chunk in chunks:
-        metadata = {
-            "dmc": chunk.dmc,
-            "chunk_id": chunk.chunk_id,
-            "dm_type": chunk.dm_type.value,
-            "security": chunk.security,
-            "applicability": chunk.applicability,
-            "structure_path_range": chunk.structure_path_range,
-            "sns_code": _extract_sns_code(chunk.dmc),
-        }
-        # chunk.metadata에서 추가 필드 병합
-        for key in ("title", "issue", "language", "block_count", "role_distribution"):
-            if key in chunk.metadata:
-                val = chunk.metadata[key]
-                # ChromaDB는 dict 값을 지원하지 않으므로 문자열로 변환
-                if isinstance(val, (dict, list)):
-                    import json
-                    metadata[key] = json.dumps(val, ensure_ascii=False)
-                else:
-                    metadata[key] = val
-
-        docs.append(Document(
+        docs.append(document_cls(
             page_content=chunk.text,
-            metadata=metadata,
+            metadata=build_chunk_metadata(chunk),
         ))
     return docs
 

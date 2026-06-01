@@ -10,11 +10,14 @@
 from __future__ import annotations
 
 import argparse
-import shutil
 import importlib.util
+import json
+import shutil
+import subprocess
 import sys
 import time
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -78,6 +81,10 @@ def _parse_dmcs(
         try:
             xml_str = asyncio.run(adapter.get_data_module_xml(dmc))
             dm_json = parse_dm_xml(xml_str)
+            if hasattr(adapter, "get_data_module_path"):
+                source_path = adapter.get_data_module_path(dmc)
+                dm_json.meta["source_file"] = source_path.name
+                dm_json.meta["source_path"] = str(source_path)
             chunks = chunk_dm(dm_json, chunk_options)
             if collect_chunks:
                 all_chunks.extend(chunks)
@@ -117,6 +124,68 @@ def scan_data_modules(
         chunk_count=len(all_chunks),
         parse_errors=parse_errors,
     )
+
+
+def _current_git_commit(repo_root: Path = PROJECT_ROOT) -> str | None:
+    try:
+        result = subprocess.run(
+            ["git", "rev-parse", "--short", "HEAD"],
+            cwd=repo_root,
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+    except OSError:
+        return None
+    if result.returncode != 0:
+        return None
+    commit = result.stdout.strip()
+    return commit or None
+
+
+def build_index_manifest(
+    *,
+    data_dir: str | Path,
+    collection_name: str,
+    dm_count: int,
+    parse_success_count: int,
+    parse_error_count: int,
+    chunk_count: int,
+    dmcs: list[str],
+    parse_errors: list[str],
+    created_at: str | None = None,
+    git_commit: str | None = None,
+) -> dict[str, Any]:
+    """Build dependency-light index manifest data for unit tests and ingest."""
+    from src.runtime.model_registry import get_model_runtime_config
+
+    cfg = get_model_runtime_config()
+    return {
+        "data_dir": str(data_dir),
+        "collection_name": collection_name,
+        "dm_count": dm_count,
+        "parse_success_count": parse_success_count,
+        "parse_error_count": parse_error_count,
+        "chunk_count": chunk_count,
+        "created_at": created_at or datetime.now(timezone.utc).isoformat(),
+        "model_backend": cfg.backend,
+        "text_model_profile": cfg.text_profile.name,
+        "vlm_model_profile": cfg.vlm_profile.name,
+        "embedding_model": cfg.embedding.model,
+        "reranker_model": cfg.reranker.model,
+        "git_commit": git_commit if git_commit is not None else _current_git_commit(),
+        "sample_dmcs": dmcs[:10],
+        "sample_errors": parse_errors[:10],
+    }
+
+
+def write_index_manifest(manifest: dict[str, Any], chroma_dir: str | Path) -> Path:
+    """Write manifest.json next to the selected Chroma persist directory."""
+    target_dir = Path(chroma_dir)
+    target_dir.mkdir(parents=True, exist_ok=True)
+    manifest_path = target_dir / "manifest.json"
+    manifest_path.write_text(json.dumps(manifest, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    return manifest_path
 
 
 def _reset_chroma_dir(chroma_dir: str | Path) -> None:
@@ -192,6 +261,17 @@ def ingest(
         persist_directory=chroma_dir,
         collection_name=collection_name,
     )
+    manifest = build_index_manifest(
+        data_dir=xml_dir,
+        collection_name=collection_name,
+        dm_count=len(dmcs),
+        parse_success_count=len(dmcs) - len(parse_errors),
+        parse_error_count=len(parse_errors),
+        chunk_count=len(all_chunks),
+        dmcs=dmcs,
+        parse_errors=parse_errors,
+    )
+    manifest_path = write_index_manifest(manifest, chroma_dir)
     elapsed = time.time() - t0
     print(f"  완료! ({elapsed:.1f}s)")
 
@@ -200,6 +280,7 @@ def ingest(
     print(f"  파싱 성공: {len(dmcs) - len(parse_errors)}개")
     print(f"  총 청크: {len(all_chunks)}개")
     print(f"  ChromaDB: {chroma_dir} / {collection_name}")
+    print(f"  Manifest: {manifest_path}")
 
     if parse_errors:
         print(f"\n  파싱 실패:")

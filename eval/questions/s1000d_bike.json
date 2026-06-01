@@ -1,0 +1,30 @@
+{
+  "dataset": "S1000D Issue 6 Bike Data Set for Release number 6 R2",
+  "modality": "text",
+  "questions": [
+    {
+      "id": "bike_overview_description",
+      "question": "What descriptive information explains the S1000D bike at the system level?",
+      "expected_evidence_hints": ["description", "bike"],
+      "expected_dmc_substrings": ["S1000DBIKE-AAA-D00-00-00-00AA-042A"]
+    },
+    {
+      "id": "front_wheel_removal_installation",
+      "question": "Which procedure covers removing or installing the front wheel assembly?",
+      "expected_evidence_hints": ["remove", "install", "front wheel"],
+      "expected_dmc_substrings": ["S1000DBIKE-AAA-DA2-30-00-00AA-520A"]
+    },
+    {
+      "id": "brake_procedure_safety",
+      "question": "What safety cautions or warnings are relevant before performing a brake procedure?",
+      "expected_evidence_hints": ["warning", "caution", "brake"],
+      "expected_dmc_substrings": ["S1000DBIKE-AAA-DA1-00-00-00AA-341A"]
+    },
+    {
+      "id": "common_information_tools",
+      "question": "Where can I find common information or support data needed before maintenance?",
+      "expected_evidence_hints": ["common information", "support", "requirements"],
+      "expected_dmc_substrings": ["S1000DBIKE-AAA-D00-00-00-00AA-00"]
+    }
+  ]
+}
