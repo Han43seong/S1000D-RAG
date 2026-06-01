@@ -33,6 +33,7 @@ _stitch_screenshots/
 .DS_Store
 Thumbs.db
 
-# Claude
+# Agent/executor workdirs
 .claude/
 .orchestration/
+.omx/
