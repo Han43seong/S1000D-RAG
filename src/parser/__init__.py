@@ -7,6 +7,7 @@ from .normalizer import (
     extract_info_code,
     extract_text_content,
 )
+from .visual_refs import extract_visual_refs_from_xml
 
 __all__ = [
     "parse_dm_xml",
@@ -16,4 +17,5 @@ __all__ = [
     "detect_dm_type",
     "extract_info_code",
     "extract_text_content",
+    "extract_visual_refs_from_xml",
 ]

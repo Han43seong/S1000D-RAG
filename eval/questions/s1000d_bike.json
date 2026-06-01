@@ -1,30 +1,82 @@
 {
   "dataset": "S1000D Issue 6 Bike Data Set for Release number 6 R2",
-  "modality": "text",
+  "modality": "mixed",
   "questions": [
     {
       "id": "bike_overview_description",
       "question": "What descriptive information explains the S1000D bike at the system level?",
-      "expected_evidence_hints": ["description", "bike"],
-      "expected_dmc_substrings": ["S1000DBIKE-AAA-D00-00-00-00AA-042A"]
+      "expected_evidence_hints": [
+        "description",
+        "bike"
+      ],
+      "expected_dmc_substrings": [
+        "S1000DBIKE-AAA-D00-00-00-00AA-042A"
+      ]
     },
     {
       "id": "front_wheel_removal_installation",
       "question": "Which procedure covers removing or installing the front wheel assembly?",
-      "expected_evidence_hints": ["remove", "install", "front wheel"],
-      "expected_dmc_substrings": ["S1000DBIKE-AAA-DA2-30-00-00AA-520A"]
+      "expected_evidence_hints": [
+        "remove",
+        "install",
+        "front wheel"
+      ],
+      "expected_dmc_substrings": [
+        "S1000DBIKE-AAA-DA2-30-00-00AA-520A"
+      ]
     },
     {
       "id": "brake_procedure_safety",
       "question": "What safety cautions or warnings are relevant before performing a brake procedure?",
-      "expected_evidence_hints": ["warning", "caution", "brake"],
-      "expected_dmc_substrings": ["S1000DBIKE-AAA-DA1-00-00-00AA-341A"]
+      "expected_evidence_hints": [
+        "warning",
+        "caution",
+        "brake"
+      ],
+      "expected_dmc_substrings": [
+        "S1000DBIKE-AAA-DA1-00-00-00AA-341A"
+      ]
     },
     {
       "id": "common_information_tools",
       "question": "Where can I find common information or support data needed before maintenance?",
-      "expected_evidence_hints": ["common information", "support", "requirements"],
-      "expected_dmc_substrings": ["S1000DBIKE-AAA-D00-00-00-00AA-00"]
+      "expected_evidence_hints": [
+        "common information",
+        "support",
+        "requirements"
+      ],
+      "expected_dmc_substrings": [
+        "S1000DBIKE-AAA-D00-00-00-00AA-00"
+      ]
+    },
+    {
+      "id": "bike_figure_identification_readiness",
+      "question": "Which figure or illustration evidence could help identify the front wheel assembly visually?",
+      "modality": "image",
+      "expected_evidence_hints": [
+        "figure",
+        "illustration",
+        "front wheel"
+      ],
+      "expected_dmc_substrings": [
+        "S1000DBIKE-AAA-DA2-30-00-00AA-520A"
+      ],
+      "requires_vlm": true
+    },
+    {
+      "id": "brake_procedure_multimodal_safety",
+      "question": "What text and visual evidence should be reviewed together before a brake procedure?",
+      "modality": "multimodal",
+      "expected_evidence_hints": [
+        "warning",
+        "caution",
+        "figure",
+        "brake"
+      ],
+      "expected_dmc_substrings": [
+        "S1000DBIKE-AAA-DA1-00-00-00AA-341A"
+      ],
+      "requires_vlm": true
     }
   ]
 }

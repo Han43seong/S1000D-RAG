@@ -30,9 +30,13 @@ def load_questions(path: str | Path = DEFAULT_QUESTIONS) -> dict[str, Any]:
     questions = data.get("questions")
     if not isinstance(questions, list) or not questions:
         raise ValueError(f"Question file must contain a non-empty 'questions' list: {question_path}")
+    allowed_modalities = {"text", "image", "multimodal"}
     for item in questions:
         if not isinstance(item, dict) or not item.get("id") or not item.get("question"):
             raise ValueError("Each question must contain at least 'id' and 'question'.")
+        modality = item.get("modality") or ("text" if data.get("modality") == "mixed" else data.get("modality", "text"))
+        if modality not in allowed_modalities:
+            raise ValueError(f"Unsupported question modality {modality!r}; expected one of {sorted(allowed_modalities)}.")
     return data
 
 
@@ -42,7 +46,9 @@ def list_questions(path: str | Path = DEFAULT_QUESTIONS) -> int:
     print(f"Modality: {data.get('modality', 'text')}")
     for idx, item in enumerate(data["questions"], start=1):
         hints = ", ".join(item.get("expected_dmc_substrings", [])) or "no DMC hint"
-        print(f"{idx}. {item['id']}: {item['question']} [{hints}]")
+        modality = item.get("modality") or ("text" if data.get("modality") == "mixed" else data.get("modality", "text"))
+        vlm_flag = " requires_vlm" if item.get("requires_vlm") else ""
+        print(f"{idx}. {item['id']} ({modality}{vlm_flag}): {item['question']} [{hints}]")
     return 0
 
 
@@ -54,12 +60,20 @@ def check_config(path: str | Path = DEFAULT_QUESTIONS, chroma_dir: str | Path | 
     cfg = get_model_runtime_config()
     selected_chroma_dir = Path(chroma_dir or CHROMA_PERSIST_DIR)
     manifest_path = selected_chroma_dir / "manifest.json"
+    modality_counts: dict[str, int] = {}
+    for item in data["questions"]:
+        modality = item.get("modality") or ("text" if data.get("modality") == "mixed" else data.get("modality", "text"))
+        modality_counts[modality] = modality_counts.get(modality, 0) + 1
+
     print(f"questions: {len(data['questions'])} ({Path(path)})")
+    print(f"modalities: {modality_counts}")
     print(f"data_dir: {S1000D_DATA_DIR} exists={S1000D_DATA_DIR.exists()}")
     print(f"chroma_dir: {selected_chroma_dir} exists={selected_chroma_dir.exists()}")
     print(f"collection_name: {CHROMA_COLLECTION_NAME}")
     print(f"manifest: {manifest_path} exists={manifest_path.exists()}")
     print(f"text_model_profile: {cfg.text_profile.name}")
+    print(f"vlm_model_profile: {cfg.vlm_profile.name}")
+    print(f"vlm_model_configured: {bool(cfg.vlm_model_path and cfg.vlm_mmproj_path)}")
     print(f"embedding_model: {cfg.embedding.model}")
     print(f"reranker_model: {cfg.reranker.model}")
     return 0
@@ -97,7 +111,7 @@ def run_retrieval(path: str | Path = DEFAULT_QUESTIONS, chroma_dir: str | Path |
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Lightweight text-only S1000D RAG evaluation helper")
+    parser = argparse.ArgumentParser(description="Lightweight S1000D RAG evaluation helper")
     parser.add_argument("--questions", default=str(DEFAULT_QUESTIONS), help="Question JSON file")
     parser.add_argument("--chroma-dir", default=None, help="Optional Chroma persist directory")
     parser.add_argument("--list-questions", action="store_true", help="List configured questions without loading models")
