@@ -320,6 +320,16 @@ def main() -> None:
         help="임베딩/ChromaDB 없이 DM 스캔과 XML 파싱까지만 수행",
     )
     parser.add_argument(
+        "--extract-assets-only",
+        action="store_true",
+        help="임베딩/ChromaDB 없이 시각 자료 참조를 스캔하고 assets manifest만 작성",
+    )
+    parser.add_argument(
+        "--assets-manifest",
+        default=None,
+        help="시각 자료 manifest 출력 경로 (기본: <chroma-dir>/assets_manifest.json)",
+    )
+    parser.add_argument(
         "--limit",
         type=int,
         default=None,
@@ -381,6 +391,33 @@ def main() -> None:
         max_chars=args.max_chars,
         overlap=args.overlap,
     )
+
+    if args.extract_assets_only:
+        from src.media.asset_extractor import extract_and_write_visual_asset_manifest
+
+        manifest_path = (
+            Path(args.assets_manifest)
+            if args.assets_manifest
+            else Path(args.chroma_dir) / "assets_manifest.json"
+        )
+        result, written_path, _manifest = extract_and_write_visual_asset_manifest(
+            data_dir=xml_dir,
+            output_path=manifest_path,
+            model_ident_code=args.model_ident,
+            limit=args.limit,
+        )
+        print(f"[assets] Data dir: {xml_dir}")
+        print(f"[assets] DM file count: {result.dm_count}")
+        print(f"[assets] Visual ref count: {result.visual_ref_count}")
+        print(f"[assets] Found asset count: {result.found_asset_count}")
+        print(f"[assets] Missing asset count: {result.missing_asset_count}")
+        print(f"[assets] Table ref count: {result.table_ref_count}")
+        print(f"[assets] Manifest: {written_path}")
+        if result.parse_errors:
+            print(f"[assets] Parse error count: {len(result.parse_errors)}")
+            for err in result.parse_errors[:10]:
+                print(f"  - {err}")
+        sys.exit(0 if result.dm_count > 0 else 1)
 
     if args.dry_run:
         result = scan_data_modules(

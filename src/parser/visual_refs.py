@@ -59,11 +59,16 @@ def extract_visual_refs_from_xml(
 
     refs: list[VisualArtifactRef] = []
     source = Path(source_path) if source_path is not None else None
-    counters = {"figure": 0, "table": 0}
+    counters = {"figure": 0, "table": 0, "graphic": 0}
+    parent_by_child = {child: parent for parent in root.iter() for child in list(parent)}
 
     for element in root.iter():
         name = _local_name(element.tag)
         if name not in counters:
+            continue
+        if name == "graphic" and _local_name(parent_by_child.get(element, ET.Element("")).tag) == "figure":
+            # Graphics inside figures are represented by their containing figure ref
+            # to preserve the established figure-first metadata contract.
             continue
         counters[name] += 1
         title = _first_child_text(element, "title")
@@ -100,6 +105,18 @@ def extract_visual_refs_from_xml(
                     kind=VisualArtifactKind.TABLE,
                     ref_id=element.get("id"),
                     title=title,
+                    dmc=dmc,
+                    structure_path=_element_path(element, counters[name]),
+                    source_path=source,
+                )
+            )
+        elif name == "graphic":
+            refs.append(
+                VisualArtifactRef(
+                    kind=VisualArtifactKind.GRAPHIC,
+                    ref_id=element.get("id"),
+                    title=title,
+                    info_entity_ident=element.get("infoEntityIdent"),
                     dmc=dmc,
                     structure_path=_element_path(element, counters[name]),
                     source_path=source,

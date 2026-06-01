@@ -40,3 +40,20 @@ def test_extract_visual_refs_from_tiny_xml_fixture():
 def test_extract_visual_refs_rejects_invalid_xml():
     with pytest.raises(ValueError, match="Invalid XML"):
         extract_visual_refs_from_xml("<dmodule><content>")
+
+
+def test_extract_visual_refs_captures_standalone_graphic_without_double_counting_figures():
+    xml = """
+    <dmodule>
+      <content>
+        <figure id="fig-a"><graphic infoEntityIdent="ICN-FIG" /></figure>
+        <graphic id="gra-a" infoEntityIdent="ICN-STANDALONE" />
+      </content>
+    </dmodule>
+    """
+
+    refs = extract_visual_refs_from_xml(xml, dmc="DMC-TEST")
+
+    assert [ref.kind for ref in refs] == [VisualArtifactKind.FIGURE, VisualArtifactKind.GRAPHIC]
+    assert refs[1].ref_id == "gra-a"
+    assert refs[1].info_entity_ident == "ICN-STANDALONE"
