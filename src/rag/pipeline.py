@@ -214,8 +214,10 @@ def run_rag_query_sync(
 
 def _strip_think_tags(text: str) -> str:
     """LLM 출력 후처리 (모델 공통)."""
-    # 1. <think>...</think> 블록 제거 (Qwen3 호환)
+    # 1. <think>...</think> 블록 제거 (Qwen3 호환). max_tokens로 닫히지 않은
+    #    사고 과정도 최종 답변에 노출하지 않도록 제거한다.
     text = re.sub(r"<think>.*?</think>", "", text, flags=re.DOTALL)
+    text = re.sub(r"<think>.*$", "", text, flags=re.DOTALL)
     # 2. EXAONE 특수 토큰 제거
     text = re.sub(r"\[?\|endofturn\|]?", "", text)
     text = re.sub(r"\[?\|assistant\|]?", "", text)
@@ -298,7 +300,17 @@ def _apply_threshold_with_fallback(
 
     # 리랭크 전수 탈락 → 벡터 점수로 폴백
     fallback = [(doc, score) for doc, score in candidates if score >= opts.relevance_threshold]
-    return fallback[:opts.rerank.top_k] if fallback else []
+    if fallback:
+        return fallback[:opts.rerank.top_k]
+
+    # 일부 Chroma/embedding 조합은 relevance score 대신 음수 distance-like 값을
+    # 반환한다. 이 경우 임계값 비교가 의미 없으므로 검색 순위를 신뢰해 top_k를
+    # 보존한다. 전체 파이프라인 smoke/eval에서 유효 문서가 전수 탈락하는 것을
+    # 방지하되, 후보가 없는 경우에는 기존처럼 no-answer로 처리된다.
+    if candidates and all(score < 0 for _, score in candidates):
+        return candidates[:opts.rerank.top_k]
+
+    return []
 
 
 def _build_meta_filter(session_meta: SessionMeta | None) -> MetaFilter | None:

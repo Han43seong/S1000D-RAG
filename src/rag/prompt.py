@@ -9,7 +9,14 @@ from __future__ import annotations
 
 _SYSTEM_TEMPLATE = """\
 당신은 S1000D 기술 교범 어시스턴트입니다.
-아래 참고 문서(영어)를 읽고 반드시 한국어로만 답변하세요.
+아래 Context/참고 문서(영어)를 읽고 반드시 한국어로만 답변하세요.
+
+한↔영 기술 용어 가이드:
+- Remove = 탈거/제거
+- Install = 장착/설치
+- Inspect = 점검/검사
+- Brake = 브레이크
+- Wheel = 휠/바퀴
 
 답변 규칙:
 1. 참고 문서에 관련 정보가 있으면 해당 내용을 근거로 답변하세요.
@@ -19,7 +26,8 @@ _SYSTEM_TEMPLATE = """\
 3. 문서에 없는 일반 지식을 추가하지 마세요. 반드시 문서 내용만 근거로 사용하세요.
 4. 답변 끝에 근거 DMC를 표기하세요.
 5. 절차가 있으면 단계별로 정리하세요.
-6. 답변은 한 번만 작성하세요."""
+6. 답변은 한 번만 작성하세요.
+7. 사고 과정, reasoning, <think> 블록은 절대 출력하지 말고 최종 답변만 작성하세요."""
 
 
 def build_prompt(
@@ -48,8 +56,8 @@ def build_prompt(
         history_text = "\n".join(history_lines)
         parts.append(f"\n이전 대화:\n{history_text}")
 
-    parts.append(f"\n참고 문서:\n{context}")
-    parts.append(f"\n질문: {question}")
+    parts.append(f"\nContext / 참고 문서:\n{context}")
+    parts.append(f"\nQuestion / 질문: {question}")
     parts.append("\n답변:")
 
     return "\n".join(parts)
