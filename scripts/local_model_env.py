@@ -11,6 +11,7 @@ from __future__ import annotations
 import argparse
 import json
 import shlex
+import site
 import sys
 from pathlib import Path
 from typing import Any
@@ -35,6 +36,17 @@ ENV_LITERALS = {
     "S1000D_MODEL_BACKEND": "llama_cpp_python",
 }
 
+CUDA_PYTHON_LIB_RELATIVE_PATHS = (
+    "nvidia/cuda_runtime/lib",
+    "nvidia/cublas/lib",
+    "nvidia/curand/lib",
+    "nvidia/cusolver/lib",
+    "nvidia/cusparse/lib",
+    "nvidia/nvjitlink/lib",
+    "nvidia/cuda_nvrtc/lib",
+    "nvidia/cudnn/lib",
+)
+
 # Keep a stable, readable order for shell output and JSON env objects.
 ENV_ORDER = (
     "S1000D_TEXT_MODEL_PROFILE",
@@ -45,11 +57,25 @@ ENV_ORDER = (
     "S1000D_EMBEDDING_MODEL",
     "S1000D_RERANKER_MODEL",
     "S1000D_MODEL_BACKEND",
+    "LD_LIBRARY_PATH",
 )
 
 
 def _resolve_under_root(root: Path, local_path: str) -> str:
     return str((root / local_path).resolve())
+
+
+def _cuda_python_lib_paths() -> list[str]:
+    """Return existing CUDA shared-library dirs installed by NVIDIA Python wheels."""
+
+    paths: list[str] = []
+    for site_dir in site.getsitepackages():
+        base = Path(site_dir)
+        for relative_path in CUDA_PYTHON_LIB_RELATIVE_PATHS:
+            path = base / relative_path
+            if path.is_dir():
+                paths.append(str(path.resolve()))
+    return paths
 
 
 def build_env(root: Path = PROJECT_ROOT) -> dict[str, str]:
@@ -58,7 +84,10 @@ def build_env(root: Path = PROJECT_ROOT) -> dict[str, str]:
     resolved_root = root.resolve()
     env = dict(ENV_LITERALS)
     env.update({name: _resolve_under_root(resolved_root, path) for name, path in ENV_PATHS.items()})
-    return {name: env[name] for name in ENV_ORDER}
+    cuda_lib_paths = _cuda_python_lib_paths()
+    if cuda_lib_paths:
+        env["LD_LIBRARY_PATH"] = ":".join(cuda_lib_paths)
+    return {name: env[name] for name in ENV_ORDER if name in env}
 
 
 def build_payload(root: Path = PROJECT_ROOT, check: bool = False) -> dict[str, Any]:
@@ -85,7 +114,13 @@ def build_payload(root: Path = PROJECT_ROOT, check: bool = False) -> dict[str, A
 
 
 def render_shell(env: dict[str, str]) -> str:
-    return "\n".join(f"export {name}={shlex.quote(value)}" for name, value in env.items())
+    lines: list[str] = []
+    for name, value in env.items():
+        if name == "LD_LIBRARY_PATH":
+            lines.append(f"export LD_LIBRARY_PATH={shlex.quote(value)}${{LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}}")
+        else:
+            lines.append(f"export {name}={shlex.quote(value)}")
+    return "\n".join(lines)
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:

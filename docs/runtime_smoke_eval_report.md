@@ -14,11 +14,11 @@ Local runtime smoke/eval was executed against the downloaded offline model stack
 - Reranker model load: PASS (`bge-reranker-v2-m3`, CPU)
 - Chroma ingestion smoke: PASS (5 DM files, 7 chunks)
 - Retrieval eval smoke: PASS (6 configured questions, top-k evidence returned)
-- Text LLM load/generation: PASS (`Qwen3.6-27B-IQ4_NL.gguf`, CPU llama.cpp backend)
-- End-to-end RAG+LLM smoke: PASS (retrieval + Qwen answer generated with 3 evidences)
+- Text LLM load/generation: PASS (`Qwen3.6-27B-IQ4_NL.gguf`, initially CPU llama.cpp backend; CUDA backend enabled in the 15:54 KST follow-up)
+- End-to-end RAG+LLM smoke: PASS (retrieval + Qwen answer generated with 3 evidences in the initial CPU smoke; web job smoke passed after CUDA enablement)
 - VLM asset availability: PASS (VLM GGUF and mmproj files present)
 - VLM image inference: NOT EXECUTED yet; the repository does not yet have a Qwen3-VL llama.cpp adapter path wired for image+mmproj inference.
-- GPU offload: NOT USED. `llama-cpp-python 0.3.23` installed in this environment reports a CPU-only backend (`llama_print_system_info` shows CPU features only). GPU memory stayed effectively unchanged during smoke.
+- GPU offload: PASS in follow-up. `llama-cpp-python 0.3.23` was reinstalled from the `cu124` wheel; `llama_print_system_info` reports CUDA and the 27B model offloaded `65/65` layers to the RTX 4080 SUPER.
 
 ## Runtime environment
 
@@ -184,9 +184,62 @@ python -m pytest tests/ -q
 148 passed, 3 warnings in 1.51s
 ```
 
+## GPU follow-up smoke — CUDA llama.cpp enabled
+
+Date: 2026-06-01 15:54 KST
+
+Actions:
+
+```bash
+python -m pip install --force-reinstall --no-cache-dir llama-cpp-python==0.3.23 --extra-index-url https://abetlen.github.io/llama-cpp-python/whl/cu124
+eval "$(python scripts/local_model_env.py)"
+python -m pytest tests/test_local_model_env.py -q
+```
+
+The CUDA wheel required NVIDIA Python-wheel shared-library directories on `LD_LIBRARY_PATH`. `scripts/local_model_env.py` now emits the existing CUDA runtime/cublas/curand/cusolver/cusparse/nvjitlink/nvrtc/cudnn library directories when present, while preserving any pre-existing `LD_LIBRARY_PATH` in shell output.
+
+Backend check:
+
+```text
+ggml_cuda_init: found 1 CUDA devices (Total VRAM: 16375 MiB):
+  Device 0: NVIDIA GeForce RTX 4080 SUPER, compute capability 8.9, VMM: yes, VRAM: 16375 MiB
+CUDA : ARCHS = 700,750,800,860,890,900 | FORCE_MMQ = 1 | USE_GRAPHS = 1 | PEER_MAX_BATCH_SIZE = 128 | CPU : SSE3 = 1 | SSSE3 = 1 | AVX = 1 | AVX2 = 1 | F16C = 1 | FMA = 1 | BMI2 = 1 | LLAMAFILE = 1 | OPENMP = 1 | REPACK = 1 |
+```
+
+Direct 27B GGUF smoke with `n_gpu_layers=-1`, `n_ctx=512`, and `max_tokens=24`:
+
+```text
+load_tensors: offloaded 65/65 layers to GPU
+load_tensors:   CPU_Mapped model buffer size =   682.03 MiB
+load_tensors:        CUDA0 model buffer size = 14634.73 MiB
+SMI_AFTER_LOAD 15920 MiB used
+llama_perf_context_print: prompt eval time = 855.83 ms / 20 tokens (23.37 tokens/s)
+llama_perf_context_print: eval time = 629.02 ms / 23 runs (36.56 tokens/s)
+TIMING_JSON {"load_sec": 15.407, "generate_sec": 1.526, "total_sec": 16.933}
+SMI_AFTER_GEN 16015 MiB used, 98% util
+```
+
+Web/API job smoke after CUDA enablement:
+
+```text
+GET /api/status -> 200 ready=true backend=llama_cpp_python chunk_count=7
+POST /api/chat/jobs -> 202 job_id=cec9f6af
+POLL -> running/generating
+POLL -> done/done
+FINAL_STATUS done llm_sec 1.177363634109497 evidences 0
+ANSWER_PREFIX 제공된 문서에서 해당 정보를 찾을 수 없습니다.
+SMI_AFTER_JOB 15990 MiB used, 62% util
+```
+
+Verification:
+
+```text
+python -m pytest tests/test_local_model_env.py -q
+5 passed in 0.12s
+```
+
 ## Remaining gaps
 
-1. GPU llama.cpp backend is not active in the current environment. `llama-cpp-python` was installed successfully, but reports CPU-only features. To use GPU offload, install or build a CUDA-enabled llama.cpp Python wheel/toolchain.
-2. VLM image inference still needs an adapter path for Qwen3-VL + `mmproj` through llama.cpp or another local VLM runtime.
-3. Chroma emits warnings because the current embedding/vectorstore combination can return distance-like negative relevance scores. The pipeline now falls back safely, but the retrieval layer should later normalize score semantics to avoid warnings.
-4. CPU-only 27B inference is functional but slow: the E2E RAG+LLM smoke took about `108s` for one short answer.
+1. VLM image inference still needs an adapter path for Qwen3-VL + `mmproj` through llama.cpp or another local VLM runtime.
+2. Chroma emits warnings because the current embedding/vectorstore combination can return distance-like negative relevance scores. The pipeline now falls back safely, but the retrieval layer should later normalize score semantics to avoid warnings.
+3. The 27B IQ4 model now runs on GPU, but it nearly fills the 16GB RTX 4080 SUPER (`~15.9-16.0GB` used during smoke). For production-like concurrent web use, consider a smaller quant/model, smaller context, or partial offload headroom.
