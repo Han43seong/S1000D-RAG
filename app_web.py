@@ -11,6 +11,7 @@ RAG 파이프라인 API를 제공합니다.
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import time
 import uuid
@@ -46,6 +47,8 @@ logger = logging.getLogger("winneai")
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 
 app = FastAPI(title="WinneAI", version="1.0.0")
+_chat_lock = asyncio.Lock()
+_chat_state = {"busy": False, "started_at": None, "question": None}
 
 
 @app.on_event("startup")
@@ -189,6 +192,8 @@ class StatusResponse(BaseModel):
     embedding_model: str
     chunk_count: int
     ready: bool
+    busy: bool = False
+    busy_for_sec: float = 0
     backend: str
     text_profile: str
     text_repo_id: str
@@ -231,11 +236,15 @@ async def get_status() -> StatusResponse:
     cfg = get_model_runtime_config()
     model_name = Path(cfg.text_model_path).stem if cfg.text_model_path else cfg.text_profile.display_name
     chunk_count = _get_chunk_count()
+    started_at = _chat_state.get("started_at")
+    busy_for_sec = time.time() - started_at if _chat_state.get("busy") and started_at else 0
     return StatusResponse(
         model_name=model_name,
         embedding_model=cfg.embedding.model,
         chunk_count=chunk_count,
         ready=chunk_count > 0,
+        busy=bool(_chat_state.get("busy")),
+        busy_for_sec=busy_for_sec,
         backend=cfg.backend,
         text_profile=cfg.text_profile.name,
         text_repo_id=cfg.text_profile.repo_id,
@@ -262,6 +271,21 @@ async def get_config() -> ConfigResponse:
 
 @app.post("/api/chat")
 async def chat(req: ChatRequest) -> ChatResponse:
+    if _chat_lock.locked():
+        raise HTTPException(
+            status_code=409,
+            detail="모델이 이미 답변을 생성 중입니다. 현재 CPU-only 27B 실행은 1~2분 이상 걸릴 수 있습니다.",
+        )
+
+    async with _chat_lock:
+        _chat_state.update({"busy": True, "started_at": time.time(), "question": req.question[:120]})
+        try:
+            return await asyncio.to_thread(_chat_sync, req)
+        finally:
+            _chat_state.update({"busy": False, "started_at": None, "question": None})
+
+
+def _chat_sync(req: ChatRequest) -> ChatResponse:
     # 세션 확인
     session = sessions_db.get(req.session_id)
     if not session:

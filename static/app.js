@@ -80,7 +80,11 @@ async function loadStatus() {
         const res = await fetch('/api/status');
         const data = await res.json();
         const badge = document.getElementById('status-badge');
-        if (data.ready) {
+        if (data.busy) {
+            const sec = Math.round(data.busy_for_sec || 0);
+            badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
+                <span class="text-amber-600">Model busy · ${sec}s</span>`;
+        } else if (data.ready) {
             badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-success"></span>
                 <span class="text-success">Model: ${data.model_name} · Ready</span>`;
         } else {
@@ -348,6 +352,13 @@ async function sendMessage() {
     document.getElementById('empty-state').classList.add('hidden');
     appendUserMessage(question);
     const typingId = showTypingIndicator();
+    const slowNoticeTimer = setTimeout(() => {
+        updateTypingIndicator(
+            typingId,
+            '로컬 27B 모델이 CPU-only로 답변을 생성 중입니다. 첫 응답은 1~2분 이상 걸릴 수 있습니다.'
+        );
+        loadStatus();
+    }, 8000);
 
     try {
         // Create real session if needed
@@ -369,17 +380,23 @@ async function sendMessage() {
                 max_context: settings.maxContext,
             }),
         });
-        const data = await res.json();
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+            throw new Error(data.detail || `서버 오류 (${res.status})`);
+        }
         removeTypingIndicator(typingId);
         appendAIMessage(data.answer, data.evidences || [], data.llm_sec || 0);
         await loadSessions();
     } catch (e) {
         removeTypingIndicator(typingId);
-        appendAIMessage('오류가 발생했습니다. 서버 상태를 확인하세요.', [], 0);
+        appendAIMessage(`오류가 발생했습니다. ${escapeHtml(e.message || '서버 상태를 확인하세요.')}`, [], 0);
         console.error('Chat error:', e);
+    } finally {
+        clearTimeout(slowNoticeTimer);
+        await loadStatus();
+        isSending = false;
+        updateSendButton();
     }
-    isSending = false;
-    updateSendButton();
 }
 
 function clearChat() {
@@ -493,10 +510,13 @@ function showTypingIndicator() {
         <div class="w-9 h-9 rounded-xl bg-primary flex items-center justify-center shrink-0 shadow-lg shadow-primary/20">
             <span class="material-symbols-outlined text-white text-lg" style="font-variation-settings:'FILL' 1;">smart_toy</span>
         </div>
-        <div class="typing-dots flex gap-1.5 p-4 bg-surface-container-lowest rounded-2xl border border-outline-variant/10">
-            <span class="w-2 h-2 rounded-full bg-primary-container"></span>
-            <span class="w-2 h-2 rounded-full bg-primary-container"></span>
-            <span class="w-2 h-2 rounded-full bg-primary-container"></span>
+        <div class="p-4 bg-surface-container-lowest rounded-2xl border border-outline-variant/10">
+            <div class="typing-dots flex gap-1.5">
+                <span class="w-2 h-2 rounded-full bg-primary-container"></span>
+                <span class="w-2 h-2 rounded-full bg-primary-container"></span>
+                <span class="w-2 h-2 rounded-full bg-primary-container"></span>
+            </div>
+            <p class="typing-note hidden mt-3 text-[13px] text-on-surface-variant max-w-md"></p>
         </div>
     `;
     canvas.appendChild(div);
@@ -507,6 +527,15 @@ function showTypingIndicator() {
 function removeTypingIndicator(id) {
     const el = document.getElementById(id);
     if (el) el.remove();
+}
+
+function updateTypingIndicator(id, message) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const note = el.querySelector('.typing-note');
+    if (!note) return;
+    note.textContent = message;
+    note.classList.remove('hidden');
 }
 
 function scrollToBottom() {
