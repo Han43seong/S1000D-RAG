@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "hardware_profiles": {
+    "rtx4080super_16gb": {
+      "display_name": "RTX 4080 SUPER 16GB",
+      "gpu": "NVIDIA GeForce RTX 4080 SUPER",
+      "vram_gb": 16,
+      "mode": "offline_local",
+      "constraints": [
+        "No model downloads during scaffold generation.",
+        "No model loading during scaffold generation.",
+        "Treat VRAM fit, latency, and quality metrics as pending until measured on target hardware."
+      ]
+    }
+  },
+  "text_llm_candidates": [
+    {
+      "profile": "qwen36_27b_iq4",
+      "display_name": "Qwen3.6 27B IQ4",
+      "planned_quantization": "IQ4_NL",
+      "role": "primary text LLM candidate",
+      "qualitative_constraints": ["16GB VRAM fit must be measured", "citation-grounded answer quality must be measured"]
+    },
+    {
+      "profile": "gemma4_26b_iq4",
+      "display_name": "Gemma 4 26B IQ4_NL",
+      "planned_quantization": "UD-IQ4_NL",
+      "role": "alternate text LLM candidate",
+      "qualitative_constraints": ["16GB VRAM fit must be measured", "compare correctness and latency against Qwen3.6"]
+    }
+  ],
+  "vlm_candidates": [
+    {
+      "profile": "qwen3_vl_8b_q4",
+      "display_name": "Qwen3-VL 8B Q4",
+      "planned_quantization": "Q4_K_M",
+      "role": "visual grounding candidate",
+      "qualitative_constraints": ["requires local model and mmproj files before real run", "visual grounding must be measured on S1000D figures"]
+    }
+  ],
+  "embedding_candidates": [
+    {
+      "profile": "bge_m3",
+      "display_name": "BGE-M3",
+      "model": "BAAI/bge-m3",
+      "role": "embedding model"
+    }
+  ],
+  "reranker_candidates": [
+    {
+      "profile": "bge_reranker_v2_m3",
+      "display_name": "BGE reranker v2 m3",
+      "model": "BAAI/bge-reranker-v2-m3",
+      "role": "cross-encoder reranker"
+    }
+  ],
+  "evaluation_dimensions": [
+    "answer_correctness",
+    "citation_grounding",
+    "visual_grounding",
+    "latency",
+    "vram_fit",
+    "offline_usability"
+  ]
+}
