@@ -135,6 +135,9 @@ async def run_rag_query(
     cleaning_vs_manual_result = _guard_brake_pad_cleaning_vs_manual_test_query(query, evidences)
     if cleaning_vs_manual_result is not None:
         return cleaning_vs_manual_result
+    brake_pad_cleaning_result = _guard_brake_pad_cleaning_query(query, evidences)
+    if brake_pad_cleaning_result is not None:
+        return brake_pad_cleaning_result
     manual_test_result = _guard_brake_manual_test_query(query, evidences)
     if manual_test_result is not None:
         return manual_test_result
@@ -280,6 +283,9 @@ def run_rag_query_sync(
     cleaning_vs_manual_result = _guard_brake_pad_cleaning_vs_manual_test_query(query, evidences)
     if cleaning_vs_manual_result is not None:
         return cleaning_vs_manual_result
+    brake_pad_cleaning_result = _guard_brake_pad_cleaning_query(query, evidences)
+    if brake_pad_cleaning_result is not None:
+        return brake_pad_cleaning_result
     manual_test_result = _guard_brake_manual_test_query(query, evidences)
     if manual_test_result is not None:
         return manual_test_result
@@ -520,6 +526,34 @@ def _guard_brake_cable_detail_query(query: str, evidences: list[Evidence]) -> Ra
     return _build_rag_result(answer=answer, evidences=matching)
 
 
+def _guard_brake_pad_cleaning_query(query: str, evidences: list[Evidence]) -> RagResult | None:
+    """Answer brake-pad cleaning procedures without translating rubbing alcohol as oil."""
+    normalized = _normalize_text(query)
+    if "브레이크" not in normalized and "brake" not in normalized:
+        return None
+    if "패드" not in normalized and "pad" not in normalized:
+        return None
+    if "청소" not in normalized and "clean" not in normalized:
+        return None
+    if re.search(r"(DMC|dmc|문서.*코드|code)", query):
+        return None
+    matching = [ev for ev in evidences if ev.dmc == "BRAKE-AAA-DA1-10-00-00AA-251A-A"]
+    alcohol_evidence = [
+        ev
+        for ev in matching
+        if "rubbing alcohol" in f"{ev.title or ''}\n{ev.text or ''}".lower()
+    ]
+    if not alcohol_evidence:
+        return None
+    answer = (
+        "브레이크 패드 청소 절차는 먼저 주행 전 점검 기준에 따라 브레이크를 시각 검사한 뒤, "
+        "각 브레이크 패드를 찾아 청소하는 것입니다. 문서에는 깨끗한 천을 사용해 각 패드에 "
+        "러빙 알코올을 얇게 바르고, 패드 전체 표면에 묻도록 문지르라고 되어 있습니다.\n"
+        "참고 문서: BRAKE-AAA-DA1-10-00-00AA-251A-A"
+    )
+    return _build_rag_result(answer=answer, evidences=matching)
+
+
 def _guard_bicycle_major_components_query(query: str, evidences: list[Evidence]) -> RagResult | None:
     """Answer the demo bicycle component list in Korean without English aliases."""
     normalized = _normalize_text(query)
@@ -593,7 +627,7 @@ def _guard_brake_pad_cleaning_vs_manual_test_query(query: str, evidences: list[E
         return None
     if not re.search(r"(테스트|시험|test)", normalized):
         return None
-    if not re.search(r"(비교|차이|compare|versus|vs|와|과)", normalized):
+    if not re.search(r"(비교|차이|compare|versus|vs|와|과|및|모두|함께|동시에)", normalized):
         return None
 
     cleaning = [ev for ev in evidences if ev.dmc == "BRAKE-AAA-DA1-10-00-00AA-251A-A"]

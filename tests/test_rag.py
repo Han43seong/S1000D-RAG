@@ -710,6 +710,43 @@ class TestRunRagQuerySync:
         assert result.answer == "브레이크 패드 청소 문서의 DMC는 BRAKE-AAA-DA1-10-00-00AA-251A-A입니다."
         mock_llm.invoke.assert_not_called()
 
+    def test_brake_pad_cleaning_query_uses_rubbing_alcohol_not_oil(self):
+        """UI E2E 회귀: 브레이크 패드 청소 절차는 오일이 아니라 rubbing alcohol 근거로 답한다."""
+        mock_vs = MagicMock()
+        doc = Document(
+            page_content=(
+                "Do a visual inspection of the brakes as given in the pre-ride checks. "
+                "Clean the brake pads. Find each of the brake pads. "
+                "Apply a thin layer of the rubbing alcohol on each of the brake pads using a clean cloth. "
+                "Rub the surface until you have applied it to the complete surface of the pad."
+            ),
+            metadata={
+                "dmc": "BRAKE-AAA-DA1-10-00-00AA-251A-A",
+                "dm_type": "procedural",
+                "title": "Brake pads - Clean with rubbing alcohol",
+            },
+        )
+        mock_vs.similarity_search_with_relevance_scores.return_value = [(doc, 0.9)]
+        mock_llm = MagicMock()
+        mock_llm.invoke.return_value = (
+            "브레이크 패드를 청소하려면 시각 검사 후 각 브레이크 패드를 찾고, "
+            "얇은 층의 오일을 패드 전체 표면에 적용합니다.\n"
+            "참고 문서: BRAKE-AAA-DA1-10-00-00AA-251A-A"
+        )
+
+        result = run_rag_query_sync(
+            query="브레이크 패드 청소 절차를 알려줘",
+            vectorstore=mock_vs,
+            llm=mock_llm,
+            options=RagOptions(rerank=RerankOptions(enabled=False), expand_query=False),
+        )
+
+        assert "오일" not in result.answer
+        assert "알코올" in result.answer
+        assert "깨끗한 천" in result.answer
+        assert "BRAKE-AAA-DA1-10-00-00AA-251A-A" in result.answer
+        mock_llm.invoke.assert_not_called()
+
     def test_llm_output_with_content_attr(self):
         """LLM이 .content 속성을 가진 객체를 반환할 때."""
         mock_vs = MagicMock()
@@ -1306,6 +1343,57 @@ DMC: DMC-000
         assert "반응 속도" not in result.answer
         assert "DMC 관련 내용을 참고" not in result.answer
         assert "BRAKE-AAA-DA1-10-00-00AA-251A-A" in result.answer
+        mock_llm.invoke.assert_not_called()
+
+    def test_brake_pad_cleaning_and_manual_test_combined_query_returns_both_sides(self):
+        """복합 질의에서는 청소 guard가 수동 테스트 근거를 가로막지 않는다."""
+        mock_vs = MagicMock()
+        mock_vs.similarity_search_with_relevance_scores.return_value = [
+            (
+                Document(
+                    page_content=(
+                        "Clean the brake pads. Apply a thin layer of rubbing alcohol on each of the brake pads "
+                        "using a clean cloth. Rub the surface until complete."
+                    ),
+                    metadata={
+                        "dmc": "BRAKE-AAA-DA1-10-00-00AA-251A-A",
+                        "chunk_id": "brake-pad-cleaning-alcohol",
+                        "dm_type": "procedural",
+                        "title": "Brake pads - Clean with rubbing alcohol",
+                    },
+                ),
+                0.9,
+            ),
+            (
+                Document(
+                    page_content="Apply the brakes. Make sure the wheel locks and the bicycle stops.",
+                    metadata={
+                        "dmc": "BRAKE-AAA-DA1-00-00-00AA-341A-A",
+                        "chunk_id": "brake-manual-test",
+                        "dm_type": "procedural",
+                        "title": "Brake system - Manual test",
+                    },
+                ),
+                0.88,
+            ),
+        ]
+        mock_llm = MagicMock()
+
+        result = run_rag_query_sync(
+            query="브레이크 패드 청소 및 수동 테스트 절차를 알려줘",
+            vectorstore=mock_vs,
+            llm=mock_llm,
+            options=RagOptions(rerank=RerankOptions(enabled=False), expand_query=False),
+        )
+
+        assert "브레이크 패드 청소" in result.answer
+        assert "브레이크 수동 테스트" in result.answer
+        assert "BRAKE-AAA-DA1-10-00-00AA-251A-A" in result.answer
+        assert "BRAKE-AAA-DA1-00-00-00AA-341A-A" in result.answer
+        assert {ev.dmc for ev in result.evidences} == {
+            "BRAKE-AAA-DA1-10-00-00AA-251A-A",
+            "BRAKE-AAA-DA1-00-00-00AA-341A-A",
+        }
         mock_llm.invoke.assert_not_called()
 
     def test_matching_procedure_question_still_calls_llm(self):

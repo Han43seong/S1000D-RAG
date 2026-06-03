@@ -336,6 +336,12 @@ class ConfigResponse(BaseModel):
 # ══════════════════════════════════════════════════════════════════════
 
 
+def _is_transient_llama_decode_error(exc: Exception) -> bool:
+    """Return True for observed llama.cpp decode slot failures that are safe to retry once."""
+    message = str(exc).lower()
+    return "llama_decode returned 1" in message or "failed to find a memory slot" in message
+
+
 @app.get("/")
 async def index():
     return FileResponse(STATIC_DIR / "index.html")
@@ -456,14 +462,26 @@ def _chat_sync(req: ChatRequest) -> ChatResponse:
 
     logger.info("Query: %s | session=%s", req.question[:60], req.session_id)
     t0 = time.time()
-    result = run_rag_query_sync(
-        query=req.question,
-        vectorstore=models["vectorstore"],
-        llm=models["llm"],
-        options=options,
-        cross_encoder=models["reranker"],
-        conversation_history=history if history else None,
-    )
+    last_exc: Exception | None = None
+    for attempt in range(2):
+        try:
+            result = run_rag_query_sync(
+                query=req.question,
+                vectorstore=models["vectorstore"],
+                llm=models["llm"],
+                options=options,
+                cross_encoder=models["reranker"],
+                conversation_history=history if history else None,
+            )
+            break
+        except Exception as exc:
+            last_exc = exc
+            if attempt == 0 and _is_transient_llama_decode_error(exc):
+                logger.warning("Transient llama decode error; retrying once | session=%s | error=%s", req.session_id, exc)
+                continue
+            raise
+    else:  # pragma: no cover - loop always breaks or raises
+        raise last_exc or RuntimeError("chat generation failed")
     llm_sec = time.time() - t0
     logger.info("Done: %.1fs | evidences=%d | answer_len=%d", llm_sec, len(result.evidences) if result.evidences else 0, len(result.answer))
 
