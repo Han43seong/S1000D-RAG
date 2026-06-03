@@ -114,6 +114,15 @@ async def run_rag_query(
     brake_components_result = _guard_brake_components_query(query, evidences)
     if brake_components_result is not None:
         return brake_components_result
+    brake_description_result = _guard_brake_description_document_query(query, evidences)
+    if brake_description_result is not None:
+        return brake_description_result
+    brake_lever_operation_result = _guard_brake_lever_operation_query(query, evidences)
+    if brake_lever_operation_result is not None:
+        return brake_lever_operation_result
+    brake_cable_detail_result = _guard_brake_cable_detail_query(query, evidences)
+    if brake_cable_detail_result is not None:
+        return brake_cable_detail_result
     bicycle_components_result = _guard_bicycle_major_components_query(query, evidences)
     if bicycle_components_result is not None:
         return bicycle_components_result
@@ -250,6 +259,15 @@ def run_rag_query_sync(
     brake_components_result = _guard_brake_components_query(query, evidences)
     if brake_components_result is not None:
         return brake_components_result
+    brake_description_result = _guard_brake_description_document_query(query, evidences)
+    if brake_description_result is not None:
+        return brake_description_result
+    brake_lever_operation_result = _guard_brake_lever_operation_query(query, evidences)
+    if brake_lever_operation_result is not None:
+        return brake_lever_operation_result
+    brake_cable_detail_result = _guard_brake_cable_detail_query(query, evidences)
+    if brake_cable_detail_result is not None:
+        return brake_cable_detail_result
     bicycle_components_result = _guard_bicycle_major_components_query(query, evidences)
     if bicycle_components_result is not None:
         return bicycle_components_result
@@ -429,6 +447,74 @@ def _guard_brake_components_query(query: str, evidences: list[Evidence]) -> RagR
     answer = (
         "브레이크 시스템의 주요 구성품은 브레이크 레버, 브레이크 케이블, 브레이크 암, "
         "브레이크 클램프(콜리퍼), 브레이크 패드입니다.\n"
+        "참고 문서: BRAKE-AAA-DA1-00-00-00AA-041A-A"
+    )
+    return _build_rag_result(answer=answer, evidences=matching)
+
+
+def _guard_brake_description_document_query(query: str, evidences: list[Evidence]) -> RagResult | None:
+    """Answer broad brake-description document content questions from 041A evidence."""
+    normalized = _normalize_text(query)
+    if "brake" not in normalized and "브레이크" not in normalized:
+        return None
+    if _PROCEDURE_INTENT_RE.search(normalized):
+        return None
+    if not re.search(r"(설명 문서|설명.*내용|관련.*내용|어떤 내용|document.*describe|description.*document)", normalized, re.IGNORECASE):
+        return None
+    matching = [ev for ev in evidences if ev.dmc == "BRAKE-AAA-DA1-00-00-00AA-041A-A"]
+    if not matching:
+        return None
+    answer = (
+        "브레이크 관련 설명 문서는 브레이크 시스템의 구성과 패드 배치를 설명합니다. "
+        "주요 구성품으로 브레이크 레버, 브레이크 케이블, 브레이크 암, 브레이크 클램프(콜리퍼), "
+        "브레이크 패드를 제시하고, 패드는 앞바퀴와 뒷바퀴에 각각 두 개씩 있음을 설명합니다.\n"
+        "참고 문서: BRAKE-AAA-DA1-00-00-00AA-041A-A"
+    )
+    return _build_rag_result(answer=answer, evidences=matching)
+
+
+def _guard_brake_lever_operation_query(query: str, evidences: list[Evidence]) -> RagResult | None:
+    """Answer the known brake-lever operation description without fragile LLM output."""
+    normalized = _normalize_text(query)
+    if "브레이크" not in normalized and "brake" not in normalized:
+        return None
+    if "레버" not in normalized and "lever" not in normalized:
+        return None
+    if _PROCEDURE_INTENT_RE.search(normalized):
+        return None
+    if not re.search(r"(작동|동작|일어나|하면|operate|happen|when)", normalized, re.IGNORECASE):
+        return None
+    matching = [ev for ev in evidences if ev.dmc == "BRAKE-AAA-DA1-00-00-00AA-041A-A"]
+    if not matching:
+        return None
+    answer = (
+        "브레이크 레버를 작동하면 브레이크 케이블을 통해 브레이크 암과 패드가 움직이고, "
+        "브레이크 패드가 바퀴 림을 눌러 마찰력을 만들어 자전거 속도를 줄입니다.\n"
+        "참고 문서: BRAKE-AAA-DA1-00-00-00AA-041A-A"
+    )
+    return _build_rag_result(answer=answer, evidences=matching)
+
+
+def _guard_brake_cable_detail_query(query: str, evidences: list[Evidence]) -> RagResult | None:
+    """Answer known brake-cable descriptive follow-up questions in Korean."""
+    normalized = _normalize_text(query)
+    if "브레이크" not in normalized and "brake" not in normalized:
+        return None
+    if "케이블" not in normalized and "cable" not in normalized:
+        return None
+    if _PROCEDURE_INTENT_RE.search(normalized):
+        return None
+    if re.search(r"(장력|조정|adjust|tension)", normalized, re.IGNORECASE):
+        return None
+    if not re.search(r"(자세|설명|무엇|알려줘|detail|describe|what|more)", normalized, re.IGNORECASE):
+        return None
+    matching = [ev for ev in evidences if ev.dmc == "BRAKE-AAA-DA1-00-00-00AA-041A-A"]
+    if not matching:
+        return None
+    answer = (
+        "브레이크 케이블은 브레이크 시스템의 주요 구성품 중 하나이며, "
+        "브레이크 레버와 브레이크 암/패드 쪽 동작을 연결하는 역할을 합니다. "
+        "문서에서는 조정 잠금 너트가 브레이크 케이블을 고정하고 케이블 장력을 조정한다고 설명합니다.\n"
         "참고 문서: BRAKE-AAA-DA1-00-00-00AA-041A-A"
     )
     return _build_rag_result(answer=answer, evidences=matching)

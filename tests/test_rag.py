@@ -473,6 +473,144 @@ class TestRunRagQuerySync:
         )
         mock_llm.invoke.assert_not_called()
 
+    def test_brake_related_description_document_query_uses_deterministic_grounded_answer(self):
+        """QA 188: 브레이크 관련 설명 문서 내용 질의는 LLM 빈 출력에 의존하지 않고 답한다."""
+        mock_vs = MagicMock()
+        doc = Document(
+            page_content=(
+                "The brake system has these primary components: the brake lever, "
+                "the brake cable, the brake arm, the brake clamp (callipers), and the brake pads. "
+                "There are four brake pads on the bicycle. Two are found on the front wheel and two on the rear wheel."
+            ),
+            metadata={
+                "dmc": "BRAKE-AAA-DA1-00-00-00AA-041A-A",
+                "dm_type": "descriptive",
+                "title": "Brake system - Description of how it is made",
+            },
+        )
+        mock_vs.similarity_search_with_relevance_scores.return_value = [(doc, 0.99)]
+        mock_llm = MagicMock()
+        mock_llm.invoke.return_value = ""
+
+        result = run_rag_query_sync(
+            query="브레이크 관련 설명 문서에는 어떤 내용이 있나요?",
+            vectorstore=mock_vs,
+            llm=mock_llm,
+            options=RagOptions(rerank=RerankOptions(enabled=False), expand_query=False),
+        )
+
+        assert result.answer == (
+            "브레이크 관련 설명 문서는 브레이크 시스템의 구성과 패드 배치를 설명합니다. "
+            "주요 구성품으로 브레이크 레버, 브레이크 케이블, 브레이크 암, 브레이크 클램프(콜리퍼), "
+            "브레이크 패드를 제시하고, 패드는 앞바퀴와 뒷바퀴에 각각 두 개씩 있음을 설명합니다.\n"
+            "참고 문서: BRAKE-AAA-DA1-00-00-00AA-041A-A"
+        )
+        mock_llm.invoke.assert_not_called()
+
+    def test_brake_cable_detail_query_uses_korean_grounded_answer(self):
+        """QA 212: 브레이크 케이블 상세 설명 질의는 영어 원문 답변을 노출하지 않는다."""
+        mock_vs = MagicMock()
+        doc = Document(
+            page_content=(
+                "The brake system has these primary components: the brake lever, "
+                "the brake cable, the brake arm, the brake clamp (callipers), and the brake pads. "
+                "The adjuster lock nut holds the brake cable. This lock nut adjusts the tension of the cable."
+            ),
+            metadata={
+                "dmc": "BRAKE-AAA-DA1-00-00-00AA-041A-A",
+                "dm_type": "descriptive",
+                "title": "Brake system - Description of how it is made",
+            },
+        )
+        mock_vs.similarity_search_with_relevance_scores.return_value = [(doc, 0.99)]
+        mock_llm = MagicMock()
+        mock_llm.invoke.return_value = (
+            "Brake lever\nThe adjuster lock nut holds the brake cable. "
+            "This lock nut adjusts the tension of the cable."
+        )
+
+        result = run_rag_query_sync(
+            query="브레이크 케이블을 조금 더 자세히 설명해줘",
+            vectorstore=mock_vs,
+            llm=mock_llm,
+            options=RagOptions(rerank=RerankOptions(enabled=False), expand_query=False),
+        )
+
+        assert result.answer == (
+            "브레이크 케이블은 브레이크 시스템의 주요 구성품 중 하나이며, "
+            "브레이크 레버와 브레이크 암/패드 쪽 동작을 연결하는 역할을 합니다. "
+            "문서에서는 조정 잠금 너트가 브레이크 케이블을 고정하고 케이블 장력을 조정한다고 설명합니다.\n"
+            "참고 문서: BRAKE-AAA-DA1-00-00-00AA-041A-A"
+        )
+        mock_llm.invoke.assert_not_called()
+
+    def test_brake_lever_operation_query_uses_deterministic_grounded_answer(self):
+        """QA 114: 브레이크 레버 작동 설명은 LLM 빈 출력에 의존하지 않고 근거 기반으로 답한다."""
+        mock_vs = MagicMock()
+        doc = Document(
+            page_content=(
+                "The brake system has these primary components: the brake lever, "
+                "the brake cable, the brake arm, the brake clamp (callipers), and the brake pads. "
+                "The pads press against the rim of the bicycle wheel to decrease the speed of the bicycle."
+            ),
+            metadata={
+                "dmc": "BRAKE-AAA-DA1-00-00-00AA-041A-A",
+                "dm_type": "descriptive",
+                "title": "Brake system - Description of how it is made",
+            },
+        )
+        mock_vs.similarity_search_with_relevance_scores.return_value = [(doc, 0.99)]
+        mock_llm = MagicMock()
+        mock_llm.invoke.return_value = ""
+
+        result = run_rag_query_sync(
+            query="브레이크 레버를 작동하면 어떤 일이 일어나나요?",
+            vectorstore=mock_vs,
+            llm=mock_llm,
+            options=RagOptions(rerank=RerankOptions(enabled=False), expand_query=False),
+        )
+
+        assert result.answer == (
+            "브레이크 레버를 작동하면 브레이크 케이블을 통해 브레이크 암과 패드가 움직이고, "
+            "브레이크 패드가 바퀴 림을 눌러 마찰력을 만들어 자전거 속도를 줄입니다.\n"
+            "참고 문서: BRAKE-AAA-DA1-00-00-00AA-041A-A"
+        )
+        mock_llm.invoke.assert_not_called()
+
+    def test_brake_lever_operation_guard_does_not_intercept_procedure_queries(self):
+        """브레이크 레버 절차 질의는 설명용 deterministic guard가 가로채지 않는다."""
+        mock_vs = MagicMock()
+        doc = Document(
+            page_content=(
+                "The brake system has these primary components: the brake lever, "
+                "the brake cable, the brake arm, the brake clamp, and the brake pads."
+            ),
+            metadata={
+                "dmc": "BRAKE-AAA-DA1-00-00-00AA-041A-A",
+                "dm_type": "descriptive",
+                "title": "Brake system - Description of how it is made",
+            },
+        )
+        mock_vs.similarity_search_with_relevance_scores.return_value = [(doc, 0.99)]
+        mock_llm = MagicMock()
+        mock_llm.invoke.return_value = "절차성 질문은 일반 경로에서 처리합니다.\n참고 문서: BRAKE-AAA-DA1-00-00-00AA-041A-A"
+
+        result = run_rag_query_sync(
+            query="브레이크 레버 작동 절차를 알려줘",
+            vectorstore=mock_vs,
+            llm=mock_llm,
+            options=RagOptions(rerank=RerankOptions(enabled=False), expand_query=False),
+        )
+
+        assert result.answer != (
+            "브레이크 레버를 작동하면 브레이크 케이블을 통해 브레이크 암과 패드가 움직이고, "
+            "브레이크 패드가 바퀴 림을 눌러 마찰력을 만들어 자전거 속도를 줄입니다.\n"
+            "참고 문서: BRAKE-AAA-DA1-00-00-00AA-041A-A"
+        )
+        assert "브레이크 레버 절차" in result.answer
+        assert "찾을 수 없습니다" in result.answer
+        mock_llm.invoke.assert_not_called()
+
     def test_bicycle_major_components_query_uses_korean_grounded_answer(self):
         """자전거 주요 구성품 질의는 영어 괄호명을 노출하지 않고 한국어로 답한다."""
         mock_vs = MagicMock()
