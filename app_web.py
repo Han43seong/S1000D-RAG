@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import re
 import time
 import uuid
 from datetime import datetime, timedelta
@@ -170,12 +171,87 @@ class EvidenceResponse(BaseModel):
     score: float
     dm_type: str | None = None
     text: str = ""
+    modality: str | None = None
+    content_role: str | None = None
+    asset_key: str | None = None
+    asset_path: str | None = None
+    caption_path: str | None = None
+    title: str | None = None
+    kind: str | None = None
+    ref_id: str | None = None
 
 
 class ChatResponse(BaseModel):
     answer: str
     evidences: list[EvidenceResponse] = []
     llm_sec: float = 0
+
+
+def _format_answer_for_display(answer: str) -> str:
+    """Remove trailing evidence metadata and obvious generation tails.
+
+    The API returns evidences separately, so the chat bubble should not duplicate
+    a final ``근거: DMC...`` line in the answer text.  Local GGUF outputs can also
+    end with a partially generated markdown table row; remove those display-only
+    tails rather than showing a broken final line to the user.
+    """
+    lines = answer.rstrip().split("\n")
+    while lines and not lines[-1].strip():
+        lines.pop()
+    if lines and lines[-1].strip().startswith("근거:"):
+        lines.pop()
+
+    cleaned: list[str] = []
+    seen_nonempty: set[str] = set()
+    has_korean = bool(re.search(r"[가-힣]", answer))
+    for line in lines:
+        stripped = line.strip()
+        if has_korean and re.search(r"[\u4E00-\u9FFF]", stripped):
+            continue
+        if stripped.startswith("|") and not stripped.endswith("|"):
+            continue
+        normalized = re.sub(r"\s+", " ", stripped)
+        if normalized and normalized in seen_nonempty:
+            continue
+        if normalized:
+            seen_nonempty.add(normalized)
+        cleaned.append(line.rstrip())
+
+    while cleaned and not cleaned[-1].strip():
+        cleaned.pop()
+    return _strip_restarted_answer_tail("\n".join(cleaned).strip())
+
+
+def _strip_restarted_answer_tail(text: str) -> str:
+    """Remove a trailing fragment that restarts the answer from the beginning."""
+    current = text.strip()
+    while True:
+        lines = current.split("\n")
+        last_index = next((idx for idx in range(len(lines) - 1, -1, -1) if lines[idx].strip()), None)
+        if last_index is None:
+            return ""
+        tail = lines[last_index].strip()
+        prior = "\n".join(lines[:last_index]).strip()
+        if not prior:
+            return current
+        normalized_tail = re.sub(r"\s+", " ", tail)
+        normalized_prior = re.sub(r"\s+", " ", prior)
+        # The local model sometimes starts the whole answer again and then hits
+        # max_tokens. If the final non-empty line is a prefix of earlier answer
+        # text, drop that line and keep the completed earlier answer.
+        if normalized_tail[: min(24, len(normalized_tail))] in normalized_prior:
+            lines.pop(last_index)
+            while lines and not lines[-1].strip():
+                lines.pop()
+            current = "\n".join(lines).strip()
+            continue
+        if len(normalized_tail) < 8 and not re.search(r"[.!?。！？]|[가-힣]다\.?$", normalized_tail):
+            lines.pop(last_index)
+            while lines and not lines[-1].strip():
+                lines.pop()
+            current = "\n".join(lines).strip()
+            continue
+        return current
 
 
 class ChatJobResponse(BaseModel):
@@ -367,20 +443,30 @@ def _chat_sync(req: ChatRequest) -> ChatResponse:
                     dmc=ev.dmc,
                     score=ev.score,
                     dm_type=ev.dm_type.value if ev.dm_type else None,
-                    text=getattr(ev, "text", "")[:200],
+                    text=(ev.text or "")[:200],
+                    modality=ev.modality,
+                    content_role=ev.content_role,
+                    asset_key=ev.asset_key,
+                    asset_path=ev.asset_path,
+                    caption_path=ev.caption_path,
+                    title=ev.title,
+                    kind=ev.kind,
+                    ref_id=ev.ref_id,
                 )
             )
+
+    display_answer = _format_answer_for_display(result.answer)
 
     # 어시스턴트 메시지 추가
     session["messages"].append({
         "role": "assistant",
-        "content": result.answer,
+        "content": display_answer,
         "evidences": [e.model_dump() for e in evidences],
         "llm_sec": llm_sec,
     })
     session["updated_at"] = datetime.now().isoformat()
 
-    return ChatResponse(answer=result.answer, evidences=evidences, llm_sec=llm_sec)
+    return ChatResponse(answer=display_answer, evidences=evidences, llm_sec=llm_sec)
 
 
 def _job_response(job: dict) -> ChatJobResponse:

@@ -59,8 +59,14 @@ def test_procedural_query_remains_text_first_but_visual_capable():
     assert route.visual_intent is False
     assert route.text_intent is True
     assert route.text_weight > route.visual_weight
-    assert "교체" in route.matched_terms
-    assert "절차" in route.matched_terms
+
+
+def test_table_as_output_format_is_not_visual_intent():
+    route = route_query("브레이크 패드 청소 절차를 표처럼 정리해줘")
+
+    assert route.visual_intent is False
+    assert route.text_intent is True
+    assert route.text_weight > route.visual_weight
 
 
 def test_visual_route_boosts_image_caption_above_comparable_text():

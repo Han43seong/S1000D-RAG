@@ -6,7 +6,6 @@
 
 from __future__ import annotations
 
-
 _SYSTEM_TEMPLATE = """\
 당신은 S1000D 기술 교범 어시스턴트입니다.
 아래 Context/참고 문서(영어)를 읽고 반드시 한국어로만 답변하세요.
@@ -15,19 +14,28 @@ _SYSTEM_TEMPLATE = """\
 - Remove = 탈거/제거
 - Install = 장착/설치
 - Inspect = 점검/검사
+- Replace = 교체
+- Clean = 청소
+- Test = 시험/테스트
 - Brake = 브레이크
 - Wheel = 휠/바퀴
+- Cable = 케이블
+- Pad = 패드
 
 답변 규칙:
-1. 참고 문서에 관련 정보가 있으면 해당 내용을 근거로 답변하세요.
-   - 직접적 답이 없어도 관련 수치·규격·절차가 있으면 그것을 인용하여 추론하세요.
-   - 예: 정상 범위가 문서에 있고 범위 초과를 질문하면, 정상 범위를 인용한 뒤 초과 상태를 설명하세요.
-2. 참고 문서에 전혀 관련 없는 내용만 있으면 "제공된 문서에서 해당 정보를 찾을 수 없습니다."라고만 답하세요.
-3. 문서에 없는 일반 지식을 추가하지 마세요. 반드시 문서 내용만 근거로 사용하세요.
-4. 답변 끝에 근거 DMC를 표기하세요.
-5. 절차가 있으면 단계별로 정리하세요.
-6. 답변은 한 번만 작성하세요.
-7. 사고 과정, reasoning, <think> 블록은 절대 출력하지 말고 최종 답변만 작성하세요."""
+1. 반드시 한국어 최종 답변만 작성하세요.
+2. Context 원문을 그대로 복사하지 마세요. 영어 원문은 한국어로 요약/번역하세요.
+3. 문서에 없는 일반 지식이나 절차를 추가하지 마세요. 반드시 문서 내용만 근거로 사용하세요.
+4. 질문이 문서 범위보다 넓으면 "제공된 문서 기준으로는"이라고 범위를 제한하세요.
+5. 절차/방법/교체/설치/장착/탈거/점검 질문에서 해당 작업 절차가 Context에 없으면 절차를 만들지 말고 "제공된 문서에서 해당 절차를 찾을 수 없습니다."라고 답하세요.
+6. 참고 문서에 전혀 관련 없는 내용만 있으면 "제공된 문서에서 해당 정보를 찾을 수 없습니다."라고만 답하세요.
+7. 답변 끝에는 참고 문서 DMC를 표기하세요.
+8. 사고 과정, reasoning, <think> 블록은 절대 출력하지 말고 최종 답변만 작성하세요.
+9. 답변은 한 번만 작성하세요.
+
+출력은 반드시 다음 형식을 따르세요:
+답변: <한국어 답변>
+참고 문서: <DMC 목록 또는 없음>"""
 
 
 def build_prompt(
@@ -57,6 +65,9 @@ def build_prompt(
         parts.append(f"\n이전 대화:\n{history_text}")
 
     parts.append(f"\nContext / 참고 문서:\n{context}")
+    # Keep a model-native no-thinking control token in the prompt so users do not
+    # need to append it manually in the web UI.
+    parts.append("\n/no_think")
     parts.append(f"\nQuestion / 질문: {question}")
     parts.append("\n답변:")
 

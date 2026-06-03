@@ -13,6 +13,67 @@ def _reset_jobs(monkeypatch):
     monkeypatch.setattr(app_web, "_schedule_chat_job", lambda job_id: None)
 
 
+def test_format_answer_for_display_removes_trailing_evidence_line():
+    raw = "브레이크 케이블은 레버 힘을 브레이크 패드로 전달합니다.\n근거: BRAKE-AAA-DA1-00-00-00AA-041A-A"
+
+    answer = app_web._format_answer_for_display(raw)
+
+    assert answer == "브레이크 케이블은 레버 힘을 브레이크 패드로 전달합니다."
+
+
+def test_format_answer_for_display_keeps_reference_document_line():
+    raw = "브레이크 시스템 구성품은 레버, 케이블, 암, 클램프, 패드입니다.\n참고 문서: BRAKE-AAA-DA1-00-00-00AA-041A-A"
+
+    answer = app_web._format_answer_for_display(raw)
+
+    assert answer.endswith("참고 문서: BRAKE-AAA-DA1-00-00-00AA-041A-A")
+
+
+def test_format_answer_for_display_removes_truncated_table_tail():
+    raw = """브레이크 패드 청소 절차는 다음과 같이 표로 정리할 수 있습니다:
+
+| 단계 | 작업 내용 |
+|------|-------------|
+| 1. 시각 점검 | 사전 탑승 점검에 따라 브레이크를 시각적으로 점검합니다. |
+| 2. 청소 | 각 브레이크 패드를 찾아 청소합니다. |
+| 3. 표면 마찰 | 표면을 문지르면서 특정 물질을 패드 전체 표면에 적용합니다. |
+
+| 3. 표면 마찰 | 표면을 문지르면서 특정 물질을 패드 전체 表面上에 적용합니다. |
+
+| 1. 시각 점검 | 사전 탑승 점검에 따라 브레이크를 시각
+근거: BRAKE-AAA-DA1-10-00-00AA-251A-A"""
+
+    answer = app_web._format_answer_for_display(raw)
+
+    assert "근거:" not in answer
+    assert "表面上" not in answer
+    assert not answer.endswith("시각")
+    assert answer.endswith("| 3. 표면 마찰 | 표면을 문지르면서 특정 물질을 패드 전체 표면에 적용합니다. |")
+
+
+def test_format_answer_for_display_removes_restarted_answer_tail():
+    raw = (
+        "브레이크 케이블은 브레이크 레버를 당기면 케이블이 당겨져 브레이크의 두 레버를 함께 당깁니다. "
+        "이로 인해 브레이크 패드가 바퀴의 외곽 휠 림에 마찰력을 발생시켜 자전거의 속도를 줄입니다.\n"
+        "브레이크 케이블은 브레이크 레버를 당기면 케이블이 당겨져 브레이크의 두 레"
+    )
+
+    answer = app_web._format_answer_for_display(raw)
+
+    assert answer == (
+        "브레이크 케이블은 브레이크 레버를 당기면 케이블이 당겨져 브레이크의 두 레버를 함께 당깁니다. "
+        "이로 인해 브레이크 패드가 바퀴의 외곽 휠 림에 마찰력을 발생시켜 자전거의 속도를 줄입니다."
+    )
+
+
+def test_format_answer_for_display_removes_short_incomplete_tail():
+    raw = "브레이크 패드 청소 절차는 1) 점검 2) 청소 3) 표면 마찰 순서입니다.\n브"
+
+    answer = app_web._format_answer_for_display(raw)
+
+    assert answer == "브레이크 패드 청소 절차는 1) 점검 2) 청소 3) 표면 마찰 순서입니다."
+
+
 def test_create_chat_job_returns_job_id_without_running_llm(monkeypatch):
     _reset_jobs(monkeypatch)
 

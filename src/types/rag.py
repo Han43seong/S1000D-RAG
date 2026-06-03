@@ -31,6 +31,7 @@ class Evidence(BaseModel):
     ref_id: Optional[str] = None
     display_label: Optional[str] = None
     source_label: Optional[str] = None
+    text: Optional[str] = None
 
 
 class RagResult(BaseModel):

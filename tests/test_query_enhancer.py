@@ -35,6 +35,13 @@ class TestExpandQuery:
         result = expand_query("윤활 주기")
         assert "lubricate" in result
 
+    def test_brake_test_expands_to_manual_test_terms(self):
+        """브레이크 시험/테스트 질의는 manual test 절차 recall 용어를 포함."""
+        result = expand_query("브레이크 시험 방법")
+        assert "manual test" in result
+        assert "apply the brakes" in result
+        assert "wheel locks" in result
+
 
 class TestExtractSnsCode:
     def test_brake_keyword(self):
