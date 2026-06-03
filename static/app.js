@@ -567,6 +567,29 @@ function renderGraphicAssetPreview(item, title) {
     `;
 }
 
+function formatEvidenceStrengthBadge(score) {
+    const normalizedScore = Number.isFinite(Number(score)) ? Number(score) : 0;
+    if (normalizedScore >= 0.6) {
+        return {
+            label: '근거 강함',
+            className: 'text-success bg-success/10',
+            title: '내부 검색 점수가 높은 참고 문서입니다. 답변 근거와 얼마나 잘 맞는지를 나타내는 내부 매칭 강도입니다.',
+        };
+    }
+    if (normalizedScore >= 0.45) {
+        return {
+            label: '근거 적합',
+            className: 'text-amber-700 bg-amber-100',
+            title: '내부 검색 점수 기준으로 관련성이 있는 참고 문서입니다. 답변 근거와 얼마나 잘 맞는지를 나타내는 내부 매칭 강도입니다.',
+        };
+    }
+    return {
+        label: '참고 후보',
+        className: 'text-outline bg-surface-container',
+        title: '내부 검색 점수가 낮은 보조 참고 문서입니다. 답변 근거는 본문과 함께 확인하세요.',
+    };
+}
+
 function appendAIMessage(text, evidences, referenceMaterials, llmSec) {
     const canvas = document.getElementById('chat-canvas');
     const div = document.createElement('div');
@@ -575,13 +598,12 @@ function appendAIMessage(text, evidences, referenceMaterials, llmSec) {
     let evidenceHtml = '';
     if (evidences && evidences.length > 0) {
         const cards = evidences.map(ev => {
-            const pct = (ev.score * 100).toFixed(0);
-            const scoreColor = ev.score >= 0.6 ? 'text-success bg-success/10' : ev.score >= 0.45 ? 'text-amber-600 bg-amber-100' : 'text-outline bg-surface-container';
+            const strength = formatEvidenceStrengthBadge(ev.score);
             return `
                 <div class="flex items-center gap-2 flex-wrap text-[13px]">
                     <span class="bg-primary text-white px-2 py-0.5 rounded-full font-bold">#${ev.rank}</span>
                     <span class="font-mono font-semibold text-on-surface">${escapeHtml(ev.dmc)}</span>
-                    <span class="${scoreColor} px-2 py-0.5 rounded-full font-bold">${pct}%</span>
+                    <span class="${strength.className} px-2 py-0.5 rounded-full font-bold" title="${escapeHtml(strength.title)}">${escapeHtml(strength.label)}</span>
                     ${ev.dm_type ? `<span class="bg-surface-container px-1.5 py-0.5 rounded text-on-surface-variant">${ev.dm_type}</span>` : ''}
                 </div>
                 ${ev.text ? `<p class="text-[13px] text-on-surface-variant line-clamp-2 mt-1">${escapeHtml(ev.text)}</p>` : ''}

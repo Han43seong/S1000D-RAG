@@ -31,6 +31,7 @@ FOCUSED_TESTS = [
     "tests/test_query_enhancer.py",
     "tests/test_eval_rag.py",
     "tests/test_app_web_runtime_state.py",
+    "tests/test_static_app_ui.py",
 ]
 
 PY_COMPILE_TARGETS = [
