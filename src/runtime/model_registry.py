@@ -27,7 +27,7 @@ LEGACY_TEXT_MODEL_PATH_ENV = "GGUF_MODEL_PATH"
 LEGACY_EMBEDDING_MODEL_ENV = "EMBEDDING_MODEL_PATH"
 LEGACY_RERANKER_MODEL_ENV = "RERANKER_MODEL_PATH"
 
-DEFAULT_TEXT_PROFILE = "qwen36_27b_iq4"
+DEFAULT_TEXT_PROFILE = "qwen3_8b_q5"
 DEFAULT_VLM_PROFILE = "qwen3_vl_8b_q4"
 DEFAULT_MODEL_BACKEND = "llama_cpp_python"
 SUPPORTED_BACKENDS = ("llama_cpp_python", "llama_server")
@@ -95,6 +95,15 @@ class ModelRuntimeConfig:
 
 
 TEXT_MODEL_PROFILES: dict[str, TextModelProfile] = {
+    "qwen3_8b_q5": TextModelProfile(
+        name="qwen3_8b_q5",
+        repo_id="unsloth/Qwen3-8B-GGUF",
+        quantization_candidates=("Q5_K_M", "Q4_K_M", "Q6_K"),
+        recommended_first_quant="Q5_K_M",
+        display_name="Qwen3 8B Q5",
+        context_window=8192,
+        notes="Recommended web demo default for RTX 4080 SUPER 16GB; much faster than 27B while preserving Qwen multilingual RAG quality.",
+    ),
     "qwen36_27b_iq4": TextModelProfile(
         name="qwen36_27b_iq4",
         repo_id="unsloth/Qwen3.6-27B-GGUF",
@@ -142,7 +151,7 @@ def _env(name: str) -> str | None:
 
 
 def _legacy_text_default_path() -> str:
-    return str(MODELS_DIR / "Qwen3-14B-Q4_K_M.gguf")
+    return str(MODELS_DIR / "llm" / "qwen3-8b" / "Qwen3-8B-Q5_K_M.gguf")
 
 
 def get_text_model_profile(name: str | None = None) -> TextModelProfile:

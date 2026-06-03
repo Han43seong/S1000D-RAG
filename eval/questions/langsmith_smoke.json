@@ -1,0 +1,78 @@
+{
+  "dataset": "S1000D LangSmith web smoke",
+  "modality": "mixed",
+  "questions": [
+    {
+      "id": "brake_diagram_label_visual_korean",
+      "question": "브레이크 회로 도면의 라벨 위치를 보여줘",
+      "expected_evidence_hints": [
+        "Cantilever brake with straddle cable",
+        "Exploded diagram of a brake"
+      ],
+      "expected_dmc_substrings": [
+        "BRAKE-AAA-DA1-00-00-00AA-041A-A"
+      ],
+      "expected_modalities": [
+        "image visual_caption"
+      ]
+    },
+    {
+      "id": "brake_cable_role_korean",
+      "question": "브레이크 케이블의 역할을 설명해줘",
+      "expected_evidence_hints": [
+        "brake cable",
+        "brake lever",
+        "brake pads"
+      ],
+      "expected_dmc_substrings": [
+        "BRAKE-AAA-DA1-00-00-00AA-041A-A"
+      ]
+    },
+    {
+      "id": "brake_pad_cleaning_table_korean",
+      "question": "브레이크 패드 청소 절차를 표처럼 정리해줘",
+      "expected_evidence_hints": [
+        "Clean the brake pads",
+        "rubbing alcohol"
+      ],
+      "expected_dmc_substrings": [
+        "BRAKE-AAA-DA1-10-00-00AA-251A-A"
+      ]
+    },
+    {
+      "id": "brake_components_korean",
+      "question": "브레이크 시스템의 주요 구성품은 무엇입니까? 한 문단으로 답하세요.",
+      "expected_evidence_hints": [
+        "brake lever",
+        "brake cable",
+        "brake pads"
+      ],
+      "expected_dmc_substrings": [
+        "BRAKE-AAA-DA1-00-00-00AA-041A-A"
+      ]
+    },
+    {
+      "id": "brake_pad_cleaning_korean",
+      "question": "브레이크 패드 청소 절차를 순서대로 요약해줘.",
+      "expected_evidence_hints": [
+        "Clean the brake pads",
+        "rubbing alcohol"
+      ],
+      "expected_dmc_substrings": [
+        "BRAKE-AAA-DA1-10-00-00AA-251A-A"
+      ]
+    },
+    {
+      "id": "brake_manual_test_korean",
+      "question": "브레이크 수동 테스트에서는 무엇을 확인해야 합니까?",
+      "expected_evidence_hints": [
+        "Apply the brakes",
+        "wheels lock",
+        "bicycle stops"
+      ],
+      "expected_dmc_substrings": [
+        "BRAKE-AAA-DA1-00-00-00AA-341A-A"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,56 @@
+{
+  "dataset": "S1000D full DB 10-question smoke",
+  "modality": "text_and_visual",
+  "questions": [
+    {
+      "id": "brake_pad_cleaning_basic",
+      "question": "브레이크 패드는 어떻게 청소하나요?",
+      "expected_dmc_substrings": ["DA1-10-00-00AA-251A-A"]
+    },
+    {
+      "id": "brake_manual_test",
+      "question": "브레이크 시스템 수동 점검 절차를 알려줘.",
+      "expected_dmc_substrings": ["DA1-00-00-00AA-341A-A"]
+    },
+    {
+      "id": "brake_pad_install_caution",
+      "question": "브레이크 패드를 교체하거나 장착할 때 주의할 점은 뭐야?",
+      "expected_dmc_substrings": ["DA1"]
+    },
+    {
+      "id": "lighting_manual_test",
+      "question": "자전거 조명 시스템이 정상 동작하는지 어떻게 확인해?",
+      "expected_dmc_substrings": ["S1000DLIGHTING"]
+    },
+    {
+      "id": "lighting_fault_lookup",
+      "question": "조명이 켜지지 않을 때 어떤 fault 문서를 봐야 해?",
+      "expected_dmc_substrings": ["S1000DLIGHTING"]
+    },
+    {
+      "id": "chain_oil_procedure",
+      "question": "체인에 오일을 바르는 절차를 알려줘.",
+      "expected_dmc_substrings": ["DA4-10-00-00AA-241A-A"]
+    },
+    {
+      "id": "handlebar_remove_exists",
+      "question": "핸들바를 제거하는 절차가 문서에 있나요?",
+      "expected_dmc_substrings": ["DA2-20-00-00AA-520A-A"]
+    },
+    {
+      "id": "stem_remove_procedure",
+      "question": "스템을 분리하는 절차를 알려줘.",
+      "expected_dmc_substrings": ["DA2-10-00-00AA-520A-A"]
+    },
+    {
+      "id": "brake_diagram_labels_visual",
+      "question": "브레이크 회로 도면이나 관련 그림에는 어떤 라벨이 있나요?",
+      "expected_dmc_substrings": ["DA1-00-00-00AA-041A-A"]
+    },
+    {
+      "id": "tire_pressure_check_exists",
+      "question": "문서에 타이어 공기압 점검 절차가 있나요?",
+      "expected_dmc_substrings": ["DA0"]
+    }
+  ]
+}

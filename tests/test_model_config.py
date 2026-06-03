@@ -15,9 +15,17 @@ S1000D_ENV_VARS = [
     "S1000D_VLM_MMPROJ_PATH",
     "S1000D_EMBEDDING_MODEL",
     "S1000D_RERANKER_MODEL",
+    "S1000D_CHROMA_PERSIST_DIR",
+    "S1000D_CHROMA_COLLECTION_NAME",
     "GGUF_MODEL_PATH",
     "EMBEDDING_MODEL_PATH",
     "RERANKER_MODEL_PATH",
+    "S1000D_LLM_N_CTX",
+    "S1000D_LLM_CONTEXT_WINDOW",
+    "S1000D_LLM_MAX_TOKENS",
+    "S1000D_LLM_TEMPERATURE",
+    "S1000D_LLM_TOP_P",
+    "S1000D_LLM_REPEAT_PENALTY",
 ]
 
 
@@ -41,7 +49,7 @@ def test_registry_import_does_not_import_heavy_ml_libraries(monkeypatch):
 
     import src.runtime.model_registry as registry
 
-    assert registry.get_text_model_profile().name == "qwen36_27b_iq4"
+    assert registry.get_text_model_profile().name == "qwen3_8b_q5"
     assert "llama_cpp" not in sys.modules
     assert "langchain_community" not in sys.modules
     assert "langchain_huggingface" not in sys.modules
@@ -56,9 +64,9 @@ def test_registry_defaults(monkeypatch):
     cfg = registry.get_model_runtime_config()
 
     assert cfg.backend == "llama_cpp_python"
-    assert cfg.text_profile.name == "qwen36_27b_iq4"
-    assert cfg.text_profile.repo_id == "unsloth/Qwen3.6-27B-GGUF"
-    assert cfg.text_profile.recommended_first_quant == "IQ4_NL"
+    assert cfg.text_profile.name == "qwen3_8b_q5"
+    assert cfg.text_profile.repo_id == "unsloth/Qwen3-8B-GGUF"
+    assert cfg.text_profile.recommended_first_quant == "Q5_K_M"
     assert cfg.vlm_profile.name == "qwen3_vl_8b_q4"
     assert cfg.embedding.model == "BAAI/bge-m3"
     assert cfg.reranker.model == "BAAI/bge-reranker-v2-m3"
@@ -66,6 +74,7 @@ def test_registry_defaults(monkeypatch):
         "gemma4_26b_iq4",
         "light_qwen35_9b",
         "qwen36_27b_iq4",
+        "qwen3_8b_q5",
     ]
 
 
@@ -158,3 +167,52 @@ def test_config_exports_new_env_names_and_keeps_legacy_aliases(monkeypatch):
     assert config.GGUF_MODEL_PATH == "/new/qwen.gguf"
     assert config.EMBEDDING_MODEL_PATH == "/new/embedding"
     assert config.RERANKER_MODEL_PATH == "/new/reranker"
+
+
+def test_chroma_config_defaults_to_full_db_and_allows_env_override(monkeypatch):
+    _clear_env(monkeypatch)
+
+    import src.config as config
+
+    config = importlib.reload(config)
+
+    assert config.CHROMA_PERSIST_DIR == str(config.PROJECT_ROOT / "chroma_db_full")
+    assert config.CHROMA_COLLECTION_NAME == "s1000d_chunks_full"
+
+    monkeypatch.setenv("S1000D_CHROMA_PERSIST_DIR", "/tmp/custom-chroma")
+    monkeypatch.setenv("S1000D_CHROMA_COLLECTION_NAME", "custom_collection")
+
+    config = importlib.reload(config)
+
+    assert config.CHROMA_PERSIST_DIR == "/tmp/custom-chroma"
+    assert config.CHROMA_COLLECTION_NAME == "custom_collection"
+
+
+def test_llm_runtime_values_can_be_overridden_by_env(monkeypatch):
+    _clear_env(monkeypatch)
+    monkeypatch.setenv("S1000D_LLM_N_CTX", "512")
+    monkeypatch.setenv("S1000D_LLM_MAX_TOKENS", "256")
+    monkeypatch.setenv("S1000D_LLM_TEMPERATURE", "0.1")
+    monkeypatch.setenv("S1000D_LLM_TOP_P", "0.8")
+    monkeypatch.setenv("S1000D_LLM_REPEAT_PENALTY", "1.1")
+
+    import src.config as config
+
+    config = importlib.reload(config)
+
+    assert config.LLM_N_CTX == 512
+    assert config.LLM_MAX_TOKENS == 256
+    assert config.LLM_TEMPERATURE == 0.1
+    assert config.LLM_TOP_P == 0.8
+    assert config.LLM_REPEAT_PENALTY == 1.1
+
+
+def test_llm_context_window_legacy_env_alias(monkeypatch):
+    _clear_env(monkeypatch)
+    monkeypatch.setenv("S1000D_LLM_CONTEXT_WINDOW", "1024")
+
+    import src.config as config
+
+    config = importlib.reload(config)
+
+    assert config.LLM_N_CTX == 1024

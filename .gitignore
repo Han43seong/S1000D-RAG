@@ -12,6 +12,8 @@ models/
 
 # Data
 chroma_db/
+chroma_db_full/
+eval/results/
 test-data/bike-sample/*.xml
 export/
 

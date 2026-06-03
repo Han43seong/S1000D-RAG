@@ -21,10 +21,10 @@ def _write_fake_stack(root):
 def test_build_env_uses_resolved_first_pass_paths(tmp_path):
     env = local_model_env.build_env(tmp_path)
 
-    assert env["S1000D_TEXT_MODEL_PROFILE"] == "qwen36_27b_iq4"
+    assert env["S1000D_TEXT_MODEL_PROFILE"] == "qwen3_8b_q5"
     assert env["S1000D_VLM_MODEL_PROFILE"] == "qwen3_vl_8b_q4"
     assert env["S1000D_TEXT_MODEL_PATH"] == str(
-        (tmp_path / "models/llm/qwen36-27b/Qwen3.6-27B-IQ4_NL.gguf").resolve()
+        (tmp_path / "models/llm/qwen3-8b/Qwen3-8B-Q5_K_M.gguf").resolve()
     )
     assert env["S1000D_VLM_MODEL_PATH"] == str(
         (tmp_path / "models/vlm/qwen3-vl-8b/Qwen3VL-8B-Instruct-Q4_K_M.gguf").resolve()
@@ -34,7 +34,11 @@ def test_build_env_uses_resolved_first_pass_paths(tmp_path):
     )
     assert env["S1000D_EMBEDDING_MODEL"] == str((tmp_path / "models/embedding/bge-m3").resolve())
     assert env["S1000D_RERANKER_MODEL"] == str((tmp_path / "models/reranker/bge-reranker-v2-m3").resolve())
+    assert env["S1000D_CHROMA_PERSIST_DIR"] == str((tmp_path / "chroma_db_full").resolve())
+    assert env["S1000D_CHROMA_COLLECTION_NAME"] == "s1000d_chunks_full"
     assert env["S1000D_MODEL_BACKEND"] == "llama_cpp_python"
+    assert env["S1000D_LLM_N_CTX"] == "2048"
+    assert env["S1000D_LLM_MAX_TOKENS"] == "1024"
 
 
 def test_default_shell_output_is_eval_safe(tmp_path):
@@ -45,8 +49,12 @@ def test_default_shell_output_is_eval_safe(tmp_path):
         check=True,
     )
 
-    assert "export S1000D_TEXT_MODEL_PROFILE=qwen36_27b_iq4" in completed.stdout
+    assert "export S1000D_TEXT_MODEL_PROFILE=qwen3_8b_q5" in completed.stdout
     assert "export S1000D_MODEL_BACKEND=llama_cpp_python" in completed.stdout
+    assert "export S1000D_CHROMA_COLLECTION_NAME=s1000d_chunks_full" in completed.stdout
+    assert str((tmp_path / "chroma_db_full").resolve()) in completed.stdout
+    assert "export S1000D_LLM_N_CTX=2048" in completed.stdout
+    assert "export S1000D_LLM_MAX_TOKENS=1024" in completed.stdout
     assert str((tmp_path / "models/embedding/bge-m3").resolve()) in completed.stdout
 
     eval_check = subprocess.run(
@@ -61,7 +69,7 @@ def test_default_shell_output_is_eval_safe(tmp_path):
         env={**os.environ, "PYTHON": sys.executable, "ROOT": str(tmp_path)},
     )
     assert eval_check.stdout == str(
-        (tmp_path / "models/llm/qwen36-27b/Qwen3.6-27B-IQ4_NL.gguf").resolve()
+        (tmp_path / "models/llm/qwen3-8b/Qwen3-8B-Q5_K_M.gguf").resolve()
     )
 
 

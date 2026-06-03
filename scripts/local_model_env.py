@@ -23,17 +23,21 @@ if str(PROJECT_ROOT) not in sys.path:
 from scripts import verify_local_models
 
 ENV_PATHS = {
-    "S1000D_TEXT_MODEL_PATH": "models/llm/qwen36-27b/Qwen3.6-27B-IQ4_NL.gguf",
+    "S1000D_TEXT_MODEL_PATH": "models/llm/qwen3-8b/Qwen3-8B-Q5_K_M.gguf",
     "S1000D_VLM_MODEL_PATH": "models/vlm/qwen3-vl-8b/Qwen3VL-8B-Instruct-Q4_K_M.gguf",
     "S1000D_VLM_MMPROJ_PATH": "models/vlm/qwen3-vl-8b/mmproj-Qwen3VL-8B-Instruct-Q8_0.gguf",
     "S1000D_EMBEDDING_MODEL": "models/embedding/bge-m3",
     "S1000D_RERANKER_MODEL": "models/reranker/bge-reranker-v2-m3",
+    "S1000D_CHROMA_PERSIST_DIR": "chroma_db_full",
 }
 
 ENV_LITERALS = {
-    "S1000D_TEXT_MODEL_PROFILE": "qwen36_27b_iq4",
+    "S1000D_TEXT_MODEL_PROFILE": "qwen3_8b_q5",
     "S1000D_VLM_MODEL_PROFILE": "qwen3_vl_8b_q4",
     "S1000D_MODEL_BACKEND": "llama_cpp_python",
+    "S1000D_CHROMA_COLLECTION_NAME": "s1000d_chunks_full",
+    "S1000D_LLM_N_CTX": "2048",
+    "S1000D_LLM_MAX_TOKENS": "1024",
 }
 
 CUDA_PYTHON_LIB_RELATIVE_PATHS = (
@@ -56,7 +60,11 @@ ENV_ORDER = (
     "S1000D_VLM_MMPROJ_PATH",
     "S1000D_EMBEDDING_MODEL",
     "S1000D_RERANKER_MODEL",
+    "S1000D_CHROMA_PERSIST_DIR",
+    "S1000D_CHROMA_COLLECTION_NAME",
     "S1000D_MODEL_BACKEND",
+    "S1000D_LLM_N_CTX",
+    "S1000D_LLM_MAX_TOKENS",
     "LD_LIBRARY_PATH",
 )
 
