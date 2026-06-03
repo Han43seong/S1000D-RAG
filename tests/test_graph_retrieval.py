@@ -77,6 +77,19 @@ def test_graph_resolver_uses_full_corpus_relationships_not_hardcoded_sns():
     assert resolve_graph_candidates("조명이 켜지지 않을 때 어떤 fault 문서를 봐야 해?", manifest).dmcs == ["S1000DLIGHTING-AAA-D00-00-00-00AA-413A-A"]
 
 
+def test_graph_resolver_maps_generic_brake_test_queries_to_brake_system_manual_test():
+    manifest = GraphManifest(
+        procedures=[
+            ProcedureNode(dmc="BRAKE-AAA-DA1-00-00-00AA-341A-A", title="Brake system - Manual test", target="brake system", action="test"),
+            ProcedureNode(dmc="BRAKE-AAA-DA1-10-00-00AA-251A-A", title="Brake pads - Clean with rubbing alcohol", target="brake pad", action="clean"),
+        ]
+    )
+
+    assert resolve_graph_candidates("브레이크 시험 방법은?", manifest).dmcs == ["BRAKE-AAA-DA1-00-00-00AA-341A-A"]
+    assert resolve_graph_candidates("브레이크가 제대로 작동하는지 확인하는 테스트 방법은?", manifest).dmcs == ["BRAKE-AAA-DA1-00-00-00AA-341A-A"]
+    assert resolve_graph_candidates("브레이크 패드 청소 절차를 알려줘", manifest).dmcs == ["BRAKE-AAA-DA1-10-00-00AA-251A-A"]
+
+
 class RecordingVectorStore:
     def __init__(self):
         self.filters = []

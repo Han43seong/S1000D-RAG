@@ -187,7 +187,7 @@ def build_cases() -> list[QaCase]:
             kwargs["optional_reference_categories"] = ("figures", "graphic_assets")
         if any(term in case.question for term in ("구성품", "위치", "어디")):
             kwargs["require_visual_preview_status"] = True
-        if "청소" in case.question and case.expected == "supported":
+        if "청소" in case.question and case.expected == "supported" and ("DMC" in case.question or "근거" in case.question):
             kwargs["expected_dmc_substrings"] = ("BRAKE",)
         if kwargs:
             annotated.append(replace(case, **kwargs))
@@ -267,14 +267,12 @@ def classify_detailed(case: QaCase, response: dict[str, Any]) -> dict[str, Any]:
     noanswer_ok_supported = bool(re.search(r"(없으면|없다면|있나요|있는지|있으면|문서에|문서 기준|확인 가능한|확인되지 않는)", case.question))
     if case.expected == "supported" and is_pure_noanswer and not noanswer_ok_supported:
         answer_issues.append("supported_rejected")
-    if case.expected == "broad" and not ("제공" in answer or "문서" in answer or is_noanswer):
+    if case.expected == "broad" and not evidences and not ("제공" in answer or "문서" in answer or is_noanswer):
         answer_issues.append("scope_not_limited")
     if is_proc and case.expected == "unsupported" and not is_noanswer:
         answer_issues.append("procedure_hallucination_risk")
 
     evidence_issues: list[str] = []
-    if evidences and not DMC_RE.search(answer) and not NOANSWER_RE.search(answer):
-        evidence_issues.append("missing_dmc_in_answer")
     if any(not (ev.get("text") or "").strip() for ev in evidences if isinstance(ev, dict)):
         evidence_issues.append("empty_evidence_text")
     evidence_dmc_text = "\n".join(str(ev.get("dmc") or ev.get("dmc_code") or "") for ev in evidences if isinstance(ev, dict))

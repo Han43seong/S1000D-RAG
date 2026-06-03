@@ -203,7 +203,7 @@ def _extract_target(query: str) -> str | None:
     q = _normalize_query(query)
     target_patterns: tuple[tuple[str, tuple[str, ...]], ...] = (
         ("brake pad", ("브레이크 패드", "brake pad", "brake pads")),
-        ("brake system", ("브레이크 시스템", "brake system")),
+        ("brake system", ("브레이크 시스템", "브레이크", "brake system", "brake", "brakes")),
         ("lights", ("조명", "light", "lights", "lighting")),
         ("chain", ("체인", "chain")),
         ("handlebar", ("핸들바", "핸들", "handlebar", "handle bar")),

@@ -38,6 +38,53 @@ def test_classify_detailed_passes_with_reference_materials_and_visual_preview():
     assert result["checks"]["visual_preview"]["status"] == "pass"
 
 
+def test_classify_detailed_accepts_clean_answer_when_dmc_is_in_evidence_and_reference_materials():
+    case = QaCase(
+        id="clean-answer-grounded-elsewhere",
+        question="브레이크 설명을 알려줘",
+        expected="supported",
+        require_reference_materials_when_evidence=True,
+        required_reference_categories=("data_modules",),
+        require_clean_display_answer=True,
+    )
+    response = {
+        "answer": "브레이크 시스템은 자전거 속도를 줄이는 주요 안전 장치입니다.",
+        "evidences": [{"dmc": "DMC-BRAKE-DESC", "text": "brake system"}],
+        "reference_materials": {"data_modules": [{"dmc": "DMC-BRAKE-DESC", "title": "Brake system"}]},
+    }
+
+    result = classify_detailed(case, response)
+
+    assert result["status"] == "pass"
+    assert "missing_dmc_in_answer" not in result["issues"]
+
+
+def test_classify_detailed_accepts_broad_grounded_answer_with_structured_references():
+    case = QaCase(
+        id="grounded-broad",
+        question="타이어 공기압 기준은 얼마인가요?",
+        expected="broad",
+    )
+    response = {
+        "answer": "타이어 공기압 기준은 2000 hPa에서 2700 hPa 사이입니다.",
+        "evidences": [{"dmc": "DMC-TIRE-PRESSURE", "text": "Tire pressure should between 2000 hPa to 2700 hPa."}],
+        "reference_materials": {"data_modules": [{"dmc": "DMC-TIRE-PRESSURE", "title": "Tire - Check pressure"}]},
+    }
+
+    result = classify_detailed(case, response)
+
+    assert result["status"] == "pass"
+    assert "scope_not_limited" not in result["issues"]
+
+
+def test_build_cases_requires_dmc_substrings_only_when_question_requests_dmc_or_grounding():
+    cases = {case.id: case for case in build_cases()}
+
+    assert cases["q076"].expected_dmc_substrings
+    assert cases["q081"].expected_dmc_substrings
+    assert cases["q099"].expected_dmc_substrings == ()
+
+
 def test_classify_detailed_flags_missing_reference_materials_when_evidence_requires_it():
     case = QaCase(
         id="missing-refs",
