@@ -14,7 +14,7 @@ import re
 import time
 import urllib.error
 import urllib.request
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass, asdict, replace
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -25,6 +25,19 @@ CONTEXT_LEAK_RE = re.compile(r"\[DMC:|\| Type:|(^|\n)---($|\n)|\[Figure:|Context
 NOANSWER_RE = re.compile(r"찾을 수 없습니다|확인되지 않습니다|없습니다")
 DMC_RE = re.compile(r"[A-Z]+-[A-Z]+-[A-Z0-9]+-[A-Z0-9-]+")
 PROCEDURE_RE = re.compile(r"(방법|절차|교체|설치|장착|탈거|제거|분해|조립|청소|점검|검사|시험|테스트)")
+UI_METADATA_TRAILING_RE = re.compile(r"(^|\n)\s*(참고\s*문서|근거)\s*[:：]\s*\S.*\s*$")
+ALLOWED_PREVIEW_STATUSES = {"available", "unsupported_cgm", "missing"}
+REFERENCE_CATEGORIES = (
+    "data_modules",
+    "procedures",
+    "faults",
+    "references",
+    "warnings",
+    "cautions",
+    "figures",
+    "graphic_assets",
+    "hotspots",
+)
 
 
 @dataclass(frozen=True)
@@ -33,6 +46,12 @@ class QaCase:
     question: str
     expected: str  # supported | unsupported | broad
     notes: str = ""
+    required_reference_categories: tuple[str, ...] = ()
+    optional_reference_categories: tuple[str, ...] = ()
+    require_reference_materials_when_evidence: bool = False
+    require_visual_preview_status: bool = False
+    require_clean_display_answer: bool = False
+    expected_dmc_substrings: tuple[str, ...] = ()
 
 
 def build_cases() -> list[QaCase]:
@@ -156,6 +175,25 @@ def build_cases() -> list[QaCase]:
     ):
         for q in group:
             cases.append(QaCase(f"q{len(cases)+1:03d}", q, expected, notes))
+    annotated: list[QaCase] = []
+    for case in cases:
+        kwargs: dict[str, Any] = {}
+        if case.expected == "supported" and ("브레이크" in case.question):
+            kwargs["require_reference_materials_when_evidence"] = True
+            kwargs["require_clean_display_answer"] = True
+        if case.expected == "supported" and any(term in case.question for term in ("시스템", "케이블", "패드", "수동 테스트", "청소", "DMC", "문서")):
+            kwargs["required_reference_categories"] = ("data_modules",)
+        if any(term in case.question for term in ("구성품", "위치", "어디", "원리", "설명")):
+            kwargs["optional_reference_categories"] = ("figures", "graphic_assets")
+        if any(term in case.question for term in ("구성품", "위치", "어디")):
+            kwargs["require_visual_preview_status"] = True
+        if "청소" in case.question and case.expected == "supported":
+            kwargs["expected_dmc_substrings"] = ("BRAKE",)
+        if kwargs:
+            annotated.append(replace(case, **kwargs))
+        else:
+            annotated.append(case)
+    cases = annotated
     if len(cases) != 100:
         raise RuntimeError(f"expected 100 cases, got {len(cases)}")
     return cases
@@ -176,44 +214,161 @@ def post_chat(base_url: str, case: QaCase, timeout: int) -> dict[str, Any]:
     return data
 
 
-def classify(case: QaCase, response: dict[str, Any]) -> tuple[str, list[str]]:
+def _check(status_issues: list[str]) -> dict[str, Any]:
+    return {"status": "pass" if not status_issues else "fail", "issues": status_issues}
+
+
+def _reference_materials_has_content(reference_materials: dict[str, Any]) -> bool:
+    return any(bool(reference_materials.get(category)) for category in REFERENCE_CATEGORIES)
+
+
+def _collect_reference_dmc_text(reference_materials: dict[str, Any]) -> str:
+    parts: list[str] = []
+    for value in reference_materials.values():
+        if isinstance(value, list):
+            for item in value:
+                if isinstance(item, dict):
+                    for key in ("dmc", "dmc_code", "dmcode", "id", "title", "source"):
+                        raw = item.get(key)
+                        if raw is not None:
+                            parts.append(str(raw))
+                elif item is not None:
+                    parts.append(str(item))
+    return "\n".join(parts)
+
+
+def classify_detailed(case: QaCase, response: dict[str, Any]) -> dict[str, Any]:
+    """Classify a QA response with answer, evidence, ontology, visual, and UI checks."""
     answer = (response.get("answer") or "").strip()
     evidences = response.get("evidences") or []
-    issues: list[str] = []
+    raw_reference_materials = response.get("reference_materials")
+
+    answer_issues: list[str] = []
     if not answer:
-        issues.append("empty_answer")
+        answer_issues.append("empty_answer")
     if CONTEXT_LEAK_RE.search(answer):
-        issues.append("context_leak")
+        answer_issues.append("context_leak")
     answer_for_lang = DMC_RE.sub("", answer)
     korean = len(KOREAN_RE.findall(answer_for_lang))
     latin = len(LATIN_RE.findall(answer_for_lang))
     if latin > max(40, korean):
-        issues.append("too_much_english")
+        answer_issues.append("too_much_english")
     if "<think" in answer.lower() or "reasoning" in answer.lower():
-        issues.append("thinking_leak")
+        answer_issues.append("thinking_leak")
     if re.search(r"(Final Answer|하기 전에|질문을 분석|답변을 작성하세요|브레이KE)", answer, re.IGNORECASE):
-        issues.append("answer_artifact")
-    if not DMC_RE.search(answer) and evidences and not NOANSWER_RE.search(answer):
-        issues.append("missing_dmc_in_answer")
-    if any(not (ev.get("text") or "").strip() for ev in evidences):
-        issues.append("empty_evidence_text")
+        answer_issues.append("answer_artifact")
 
     is_noanswer = bool(NOANSWER_RE.search(answer))
     has_supported_info = bool(re.search(r"(확인되는 작업|다만 관련|관련 설명|근거:|참고 문서:)", answer))
     is_pure_noanswer = is_noanswer and not has_supported_info
     is_proc = bool(PROCEDURE_RE.search(case.question))
     if case.expected == "unsupported" and not is_noanswer:
-        issues.append("unsupported_not_rejected")
+        answer_issues.append("unsupported_not_rejected")
     noanswer_ok_supported = bool(re.search(r"(없으면|없다면|있나요|있는지|있으면|문서에|문서 기준|확인 가능한|확인되지 않는)", case.question))
     if case.expected == "supported" and is_pure_noanswer and not noanswer_ok_supported:
-        issues.append("supported_rejected")
+        answer_issues.append("supported_rejected")
     if case.expected == "broad" and not ("제공" in answer or "문서" in answer or is_noanswer):
-        issues.append("scope_not_limited")
+        answer_issues.append("scope_not_limited")
     if is_proc and case.expected == "unsupported" and not is_noanswer:
-        issues.append("procedure_hallucination_risk")
+        answer_issues.append("procedure_hallucination_risk")
 
-    status = "pass" if not issues else "fail"
-    return status, issues
+    evidence_issues: list[str] = []
+    if evidences and not DMC_RE.search(answer) and not NOANSWER_RE.search(answer):
+        evidence_issues.append("missing_dmc_in_answer")
+    if any(not (ev.get("text") or "").strip() for ev in evidences if isinstance(ev, dict)):
+        evidence_issues.append("empty_evidence_text")
+    evidence_dmc_text = "\n".join(str(ev.get("dmc") or ev.get("dmc_code") or "") for ev in evidences if isinstance(ev, dict))
+
+    reference_issues: list[str] = []
+    reference_materials: dict[str, Any] = {}
+    if raw_reference_materials is None:
+        if evidences and case.require_reference_materials_when_evidence:
+            reference_issues.append("missing_reference_materials")
+    elif not isinstance(raw_reference_materials, dict):
+        reference_issues.append("invalid_reference_materials_shape")
+    else:
+        reference_materials = raw_reference_materials
+        for category, items in reference_materials.items():
+            if category in REFERENCE_CATEGORIES and not isinstance(items, list):
+                reference_issues.append("invalid_reference_materials_shape")
+                break
+        if evidences and case.require_reference_materials_when_evidence and not _reference_materials_has_content(reference_materials):
+            reference_issues.append("missing_reference_materials")
+
+    for category in case.required_reference_categories:
+        if not isinstance(reference_materials.get(category), list) or not reference_materials.get(category):
+            reference_issues.append(f"missing_reference_category:{category}")
+
+    reference_dmc_text = _collect_reference_dmc_text(reference_materials)
+    for expected_substring in case.expected_dmc_substrings:
+        if expected_substring not in evidence_dmc_text:
+            # Reference-material DMC text is accepted as a documented fallback for current
+            # structured responses, but evidence.dmc remains the preferred source.
+            if expected_substring not in reference_dmc_text and expected_substring not in answer:
+                evidence_issues.append("missing_required_evidence_dmc")
+
+    visual_issues: list[str] = []
+    graphic_assets = reference_materials.get("graphic_assets") if isinstance(reference_materials, dict) else None
+    if case.require_visual_preview_status and (not isinstance(graphic_assets, list) or not graphic_assets):
+        visual_issues.append("missing_graphic_assets")
+    if graphic_assets is not None and not isinstance(graphic_assets, list):
+        visual_issues.append("invalid_reference_materials_shape")
+    elif isinstance(graphic_assets, list) and (case.require_visual_preview_status or graphic_assets):
+        for asset in graphic_assets:
+            if not isinstance(asset, dict):
+                visual_issues.append("invalid_reference_materials_shape")
+                continue
+            status = asset.get("preview_status")
+            preview_url = (asset.get("preview_url") or "").strip()
+            if not status:
+                visual_issues.append("missing_visual_preview_status")
+                continue
+            if status not in ALLOWED_PREVIEW_STATUSES:
+                visual_issues.append("invalid_visual_preview_status")
+            if asset.get("preview_available") is True and not preview_url:
+                visual_issues.append("missing_visual_preview_status")
+            if status == "available" and not preview_url:
+                visual_issues.append("missing_visual_preview_status")
+
+    ui_issues: list[str] = []
+    if case.require_clean_display_answer and UI_METADATA_TRAILING_RE.search(answer):
+        ui_issues.append("ui_metadata_leak")
+
+    checks = {
+        "answer": _check(answer_issues),
+        "evidence": _check(evidence_issues),
+        "reference_materials": _check(reference_issues),
+        "visual_preview": _check(sorted(set(visual_issues))),
+        "ui_display": _check(ui_issues),
+    }
+    issues: list[str] = []
+    for check in checks.values():
+        issues.extend(check["issues"])
+    # Preserve first-seen ordering while removing duplicates caused by repeated assets.
+    issues = list(dict.fromkeys(issues))
+    metrics = {
+        "answer_chars": len(answer),
+        "evidence_count": len(evidences) if isinstance(evidences, list) else 0,
+        "reference_category_counts": {
+            category: len(reference_materials.get(category) or [])
+            for category in REFERENCE_CATEGORIES
+            if isinstance(reference_materials.get(category), list)
+        },
+        "graphic_asset_count": len(graphic_assets) if isinstance(graphic_assets, list) else 0,
+        "korean_chars": korean,
+        "latin_chars": latin,
+    }
+    return {
+        "status": "pass" if not issues else "fail",
+        "issues": issues,
+        "checks": checks,
+        "metrics": metrics,
+    }
+
+
+def classify(case: QaCase, response: dict[str, Any]) -> tuple[str, list[str]]:
+    detailed = classify_detailed(case, response)
+    return detailed["status"], list(detailed["issues"])
 
 
 def main() -> int:
@@ -234,15 +389,18 @@ def main() -> int:
         print(f"[{index:03d}/{len(cases):03d}] {case.question}", flush=True)
         try:
             response = post_chat(args.base_url, case, args.timeout)
-            status, issues = classify(case, response)
+            detailed = classify_detailed(case, response)
             record = {
                 "case": asdict(case),
-                "status": status,
-                "issues": issues,
+                "status": detailed["status"],
+                "issues": detailed["issues"],
+                "checks": detailed["checks"],
+                "metrics": detailed["metrics"],
                 "answer": response.get("answer"),
                 "llm_sec": response.get("llm_sec"),
                 "wall_sec": response.get("wall_sec"),
                 "evidences": response.get("evidences") or [],
+                "reference_materials": response.get("reference_materials") or {},
             }
         except (urllib.error.URLError, TimeoutError, Exception) as exc:
             record = {
@@ -255,9 +413,14 @@ def main() -> int:
 
     failures = [r for r in records if r["status"] != "pass"]
     issue_counts: dict[str, int] = {}
+    check_group_counts: dict[str, dict[str, int]] = {}
     for r in records:
         for issue in r.get("issues", []):
             issue_counts[issue] = issue_counts.get(issue, 0) + 1
+        for group, check in (r.get("checks") or {}).items():
+            status = check.get("status", "unknown") if isinstance(check, dict) else "unknown"
+            group_counts = check_group_counts.setdefault(group, {})
+            group_counts[status] = group_counts.get(status, 0) + 1
     avg_llm = sum(float(r.get("llm_sec") or 0) for r in records) / max(1, len(records))
     summary = {
         "run_id": run_id,
@@ -265,6 +428,7 @@ def main() -> int:
         "pass": len(records) - len(failures),
         "fail": len(failures),
         "issue_counts": dict(sorted(issue_counts.items(), key=lambda kv: (-kv[1], kv[0]))),
+        "check_group_counts": check_group_counts,
         "avg_llm_sec": round(avg_llm, 3),
     }
     json_path = out_dir / f"{run_id}.json"
@@ -279,6 +443,13 @@ def main() -> int:
         f"- fail: {summary['fail']}",
         f"- avg_llm_sec: {summary['avg_llm_sec']}",
         f"- issue_counts: `{json.dumps(summary['issue_counts'], ensure_ascii=False)}`",
+        f"- check_group_counts: `{json.dumps(summary['check_group_counts'], ensure_ascii=False)}`",
+        "",
+        "## Ontology / Reference / Visual Summary",
+        "",
+        f"- reference_materials: `{json.dumps(summary['check_group_counts'].get('reference_materials', {}), ensure_ascii=False)}`",
+        f"- visual_preview: `{json.dumps(summary['check_group_counts'].get('visual_preview', {}), ensure_ascii=False)}`",
+        f"- ui_display: `{json.dumps(summary['check_group_counts'].get('ui_display', {}), ensure_ascii=False)}`",
         "",
         "## Failures",
     ]
@@ -289,6 +460,7 @@ def main() -> int:
             f"### {c['id']} {c['question']}",
             f"- expected: {c['expected']}",
             f"- issues: {', '.join(r.get('issues', []))}",
+            f"- checks: `{json.dumps(r.get('checks') or {}, ensure_ascii=False)}`",
             f"- llm_sec: {r.get('llm_sec')}",
             "- answer:",
             "```",

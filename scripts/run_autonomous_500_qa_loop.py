@@ -21,7 +21,7 @@ import sys
 import time
 import urllib.error
 import urllib.request
-from dataclasses import asdict
+from dataclasses import asdict, replace
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -30,7 +30,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from scripts.run_quality_qa_loop import QaCase, build_cases, classify, post_chat  # noqa: E402
+from scripts.run_quality_qa_loop import QaCase, build_cases, classify_detailed, post_chat  # noqa: E402
 
 DEFAULT_BASE_URL = "http://127.0.0.1:8000"
 DEFAULT_OUT_ROOT = PROJECT_ROOT / "eval" / "results" / "autonomous-500"
@@ -134,15 +134,18 @@ def ensure_server(run_dir: Path) -> dict[str, Any]:
 def run_case(case: QaCase, timeout: int) -> dict[str, Any]:
     try:
         response = post_chat(DEFAULT_BASE_URL, case, timeout)
-        status, issues = classify(case, response)
+        detailed = classify_detailed(case, response)
         return {
             "case": asdict(case),
-            "status": status,
-            "issues": issues,
+            "status": detailed["status"],
+            "issues": detailed["issues"],
+            "checks": detailed["checks"],
+            "metrics": detailed["metrics"],
             "answer": response.get("answer"),
             "llm_sec": response.get("llm_sec"),
             "wall_sec": response.get("wall_sec"),
             "evidences": response.get("evidences") or [],
+            "reference_materials": response.get("reference_materials") or {},
         }
     except (urllib.error.URLError, TimeoutError, Exception) as exc:  # noqa: BLE001
         return {
@@ -212,10 +215,9 @@ def expanded_cases(total: int) -> list[QaCase]:
     for index in range(total):
         source = base[index % len(base)]
         cycle = index // len(base) + 1
-        cases.append(QaCase(
+        cases.append(replace(
+            source,
             id=f"qa500-{index + 1:03d}-cycle{cycle}-{source.id}",
-            question=source.question,
-            expected=source.expected,
             notes=f"{source.notes}; repeated-cycle={cycle}; source={source.id}",
         ))
     return cases
