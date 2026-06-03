@@ -23,7 +23,9 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+
+from src.types.rag import ReferenceMaterials
 
 from src.config import (
     CHROMA_COLLECTION_NAME,
@@ -183,23 +185,28 @@ class EvidenceResponse(BaseModel):
 
 class ChatResponse(BaseModel):
     answer: str
-    evidences: list[EvidenceResponse] = []
+    evidences: list[EvidenceResponse] = Field(default_factory=list)
+    reference_materials: ReferenceMaterials = Field(default_factory=ReferenceMaterials)
     llm_sec: float = 0
 
 
 def _format_answer_for_display(answer: str) -> str:
     """Remove trailing evidence metadata and obvious generation tails.
 
-    The API returns evidences separately, so the chat bubble should not duplicate
-    a final ``근거: DMC...`` line in the answer text.  Local GGUF outputs can also
-    end with a partially generated markdown table row; remove those display-only
-    tails rather than showing a broken final line to the user.
+    The internal RAG/LLM answer may carry source metadata for tracing and QA, but
+    the chat bubble should show only the answer text.  Source DMCs and ontology
+    evidence are rendered separately below the answer via the existing reference
+    dropdowns.  Local GGUF outputs can also end with a partially generated
+    markdown table row; remove those display-only tails rather than showing a
+    broken final line to the user.
     """
     lines = answer.rstrip().split("\n")
     while lines and not lines[-1].strip():
         lines.pop()
-    if lines and lines[-1].strip().startswith("근거:"):
+    while lines and _is_trailing_answer_metadata_line(lines[-1]):
         lines.pop()
+        while lines and not lines[-1].strip():
+            lines.pop()
 
     cleaned: list[str] = []
     seen_nonempty: set[str] = set()
@@ -220,6 +227,12 @@ def _format_answer_for_display(answer: str) -> str:
     while cleaned and not cleaned[-1].strip():
         cleaned.pop()
     return _strip_restarted_answer_tail("\n".join(cleaned).strip())
+
+
+def _is_trailing_answer_metadata_line(line: str) -> bool:
+    """Return True for source metadata lines that belong in dropdowns, not UI text."""
+    stripped = line.strip()
+    return bool(re.match(r"^(근거|참고 문서)\s*[:：]\s*.*$", stripped))
 
 
 def _strip_restarted_answer_tail(text: str) -> str:
@@ -261,7 +274,8 @@ class ChatJobResponse(BaseModel):
     status: str
     progress: str
     answer: str | None = None
-    evidences: list[EvidenceResponse] = []
+    evidences: list[EvidenceResponse] = Field(default_factory=list)
+    reference_materials: ReferenceMaterials = Field(default_factory=ReferenceMaterials)
     llm_sec: float = 0
     error: str | None = None
     created_at: str
@@ -462,11 +476,12 @@ def _chat_sync(req: ChatRequest) -> ChatResponse:
         "role": "assistant",
         "content": display_answer,
         "evidences": [e.model_dump() for e in evidences],
+        "reference_materials": result.reference_materials.model_dump(),
         "llm_sec": llm_sec,
     })
     session["updated_at"] = datetime.now().isoformat()
 
-    return ChatResponse(answer=display_answer, evidences=evidences, llm_sec=llm_sec)
+    return ChatResponse(answer=display_answer, evidences=evidences, reference_materials=result.reference_materials, llm_sec=llm_sec)
 
 
 def _job_response(job: dict) -> ChatJobResponse:
@@ -478,6 +493,7 @@ def _job_response(job: dict) -> ChatJobResponse:
         progress=job["progress"],
         answer=job.get("answer"),
         evidences=job.get("evidences") or [],
+        reference_materials=job.get("reference_materials") or ReferenceMaterials(),
         llm_sec=job.get("llm_sec") or 0,
         error=job.get("error"),
         created_at=job["created_at"],
@@ -510,6 +526,7 @@ async def _run_chat_job(job_id: str) -> None:
         job["progress"] = "done"
         job["answer"] = result.answer
         job["evidences"] = result.evidences
+        job["reference_materials"] = result.reference_materials.model_dump()
         job["llm_sec"] = result.llm_sec
     except Exception as exc:  # pragma: no cover - defensive runtime path
         logger.exception("Chat job failed: %s", job_id)
@@ -541,6 +558,7 @@ async def create_chat_job(req: ChatRequest) -> ChatJobResponse:
         "progress": "queued",
         "answer": None,
         "evidences": [],
+        "reference_materials": {},
         "llm_sec": 0,
         "error": None,
         "cancel_requested": False,

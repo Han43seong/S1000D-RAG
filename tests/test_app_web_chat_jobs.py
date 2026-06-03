@@ -21,12 +21,36 @@ def test_format_answer_for_display_removes_trailing_evidence_line():
     assert answer == "브레이크 케이블은 레버 힘을 브레이크 패드로 전달합니다."
 
 
-def test_format_answer_for_display_keeps_reference_document_line():
+def test_format_answer_for_display_removes_trailing_reference_document_line():
     raw = "브레이크 시스템 구성품은 레버, 케이블, 암, 클램프, 패드입니다.\n참고 문서: BRAKE-AAA-DA1-00-00-00AA-041A-A"
 
     answer = app_web._format_answer_for_display(raw)
 
-    assert answer.endswith("참고 문서: BRAKE-AAA-DA1-00-00-00AA-041A-A")
+    assert answer == "브레이크 시스템 구성품은 레버, 케이블, 암, 클램프, 패드입니다."
+
+
+def test_format_answer_for_display_keeps_reference_document_words_in_body_text():
+    raw = "정비자는 관련 참고 문서를 확인한 뒤 절차를 수행해야 합니다."
+
+    answer = app_web._format_answer_for_display(raw)
+
+    assert answer == raw
+
+
+def test_format_answer_for_display_removes_multiple_trailing_metadata_lines():
+    raw = "브레이크 패드는 림을 눌러 감속합니다.\n근거: DMC-000\n참고 문서： BRAKE-AAA-DA1-00-00-00AA-041A-A"
+
+    answer = app_web._format_answer_for_display(raw)
+
+    assert answer == "브레이크 패드는 림을 눌러 감속합니다."
+
+
+def test_format_answer_for_display_keeps_non_trailing_reference_metadata_like_text():
+    raw = "참고 문서: BRAKE-AAA-DA1-00-00-00AA-041A-A\n이 문서는 브레이크 시스템 구성품을 설명합니다."
+
+    answer = app_web._format_answer_for_display(raw)
+
+    assert answer == raw
 
 
 def test_format_answer_for_display_removes_truncated_table_tail():
@@ -178,3 +202,97 @@ def test_run_chat_job_records_done_result(monkeypatch):
     assert job["answer"] == "answer:테스트 질문"
     assert job["llm_sec"] == 1.25
     assert app_web._active_job_id is None
+
+
+def test_chat_response_serializes_reference_materials_separately():
+    response = app_web.ChatResponse(
+        answer="자연어 답변만",
+        evidences=[],
+        reference_materials={
+            "warnings": [
+                {"id": "warning:1", "label": "warning", "type": "Warning", "text": "Wear goggles"}
+            ],
+            "figures": [
+                {"id": "figure:1", "label": "Brake figure", "title": "Brake figure", "type": "Figure"}
+            ],
+        },
+    )
+
+    payload = response.model_dump()
+
+    assert payload["answer"] == "자연어 답변만"
+    assert payload["reference_materials"]["warnings"][0]["text"] == "Wear goggles"
+    assert payload["reference_materials"]["figures"][0]["title"] == "Brake figure"
+
+
+def test_run_chat_job_records_reference_materials(monkeypatch):
+    monkeypatch.setattr(app_web, "chat_jobs", {})
+    monkeypatch.setattr(app_web, "_active_job_id", None)
+
+    async def fake_chat(req):
+        return app_web.ChatResponse(
+            answer=f"answer:{req.question}",
+            evidences=[],
+            reference_materials={"warnings": [{"id": "warning:1", "label": "warning", "type": "Warning"}]},
+            llm_sec=1.25,
+        )
+
+    monkeypatch.setattr(app_web, "chat", fake_chat)
+    now = "2026-06-01T00:00:00"
+    app_web.chat_jobs["job-ref"] = {
+        "job_id": "job-ref",
+        "session_id": "unit-session",
+        "question": "테스트 질문",
+        "request": {"session_id": "unit-session", "question": "테스트 질문"},
+        "status": "queued",
+        "progress": "queued",
+        "answer": None,
+        "evidences": [],
+        "reference_materials": {},
+        "llm_sec": 0,
+        "error": None,
+        "cancel_requested": False,
+        "created_at": now,
+        "updated_at": now,
+    }
+
+    asyncio.run(app_web._run_chat_job("job-ref"))
+
+    job = app_web.chat_jobs["job-ref"]
+    assert job["status"] == "done"
+    assert job["reference_materials"]["warnings"][0]["id"] == "warning:1"
+
+
+def test_static_app_renders_reference_materials_panel():
+    js = open("static/app.js", encoding="utf-8").read()
+
+    assert "referenceMaterials" in js
+    assert "참고자료" in js
+    assert "안전주의" in js
+    assert "관련 그림" in js
+
+
+def test_chat_sync_persists_reference_materials_in_session(monkeypatch):
+    from src.types.rag import RagResult, ReferenceMaterials, ReferenceMaterialItem
+    import src.rag.pipeline as pipeline
+
+    monkeypatch.setattr(app_web, "sessions_db", {})
+    monkeypatch.setattr(app_web, "_get_models", lambda: {"vectorstore": object(), "llm": object(), "reranker": None})
+
+    def fake_run_rag_query_sync(**kwargs):
+        return RagResult(
+            answer="자연어 답변만",
+            evidences=[],
+            reference_materials=ReferenceMaterials(
+                warnings=[ReferenceMaterialItem(id="warning:1", label="warning", type="Warning", text="Wear goggles")]
+            ),
+        )
+
+    monkeypatch.setattr(pipeline, "run_rag_query_sync", fake_run_rag_query_sync)
+
+    response = app_web._chat_sync(app_web.ChatRequest(session_id="session-ref", question="질문"))
+
+    assert response.reference_materials.warnings[0].id == "warning:1"
+    message = app_web.sessions_db["session-ref"]["messages"][-1]
+    assert message["content"] == "자연어 답변만"
+    assert message["reference_materials"]["warnings"][0]["id"] == "warning:1"

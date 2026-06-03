@@ -17,6 +17,7 @@ from src.config import CHROMA_PERSIST_DIR, MAX_CONTEXT_CHARS, RERANK_TOP_K, VECT
 from src.types.rag import Evidence, RagOptions, RagResult, RerankOptions, SessionMeta
 from .prompt import build_prompt
 from .graph_retrieval import load_graph_manifest, resolve_graph_candidates
+from .evidence_trail import collect_reference_materials
 from .query_enhancer import enhance_query
 from .reranker import rerank
 from .retriever import MetaFilter, retrieve, retrieve_two_stage
@@ -87,7 +88,7 @@ async def run_rag_query(
             )
 
     if not candidates:
-        return RagResult(
+        return _build_rag_result(
             answer="제공된 문서에서 해당 정보를 찾을 수 없습니다.",
             evidences=[],
         )
@@ -104,7 +105,7 @@ async def run_rag_query(
     ranked = _apply_threshold_with_fallback(ranked, candidates, opts)
 
     if not ranked:
-        return RagResult(
+        return _build_rag_result(
             answer="제공된 문서에서 해당 정보를 찾을 수 없습니다.",
             evidences=[],
         )
@@ -162,9 +163,17 @@ async def run_rag_query(
     answer_text = _fallback_empty_answer(answer_text, evidences)
     answer_text = _scope_limit_broad_answer(query, answer_text)
 
-    return RagResult(
+    return _build_rag_result(
         answer=answer_text.strip(),
         evidences=evidences,
+    )
+
+
+def _build_rag_result(answer: str, evidences: list[Evidence]) -> RagResult:
+    return RagResult(
+        answer=answer,
+        evidences=evidences,
+        reference_materials=collect_reference_materials(evidences),
     )
 
 
@@ -215,7 +224,7 @@ def run_rag_query_sync(
             )
 
     if not candidates:
-        return RagResult(
+        return _build_rag_result(
             answer="제공된 문서에서 해당 정보를 찾을 수 없습니다.",
             evidences=[],
         )
@@ -232,7 +241,7 @@ def run_rag_query_sync(
     ranked = _apply_threshold_with_fallback(ranked, candidates, opts)
 
     if not ranked:
-        return RagResult(
+        return _build_rag_result(
             answer="제공된 문서에서 해당 정보를 찾을 수 없습니다.",
             evidences=[],
         )
@@ -290,7 +299,7 @@ def run_rag_query_sync(
     answer_text = _fallback_empty_answer(answer_text, evidences)
     answer_text = _scope_limit_broad_answer(query, answer_text)
 
-    return RagResult(
+    return _build_rag_result(
         answer=answer_text.strip(),
         evidences=evidences,
     )
@@ -399,7 +408,7 @@ def _guard_visual_caption_query(query: str, evidences: list[Evidence]) -> RagRes
         "라벨 위치는 원본 도면 파일에서 확인해야 합니다.\n"
         f"참고 문서: {dmc_text}"
     )
-    return RagResult(answer=answer, evidences=evidences)
+    return _build_rag_result(answer=answer, evidences=evidences)
 
 
 def _guard_brake_components_query(query: str, evidences: list[Evidence]) -> RagResult | None:
@@ -422,7 +431,7 @@ def _guard_brake_components_query(query: str, evidences: list[Evidence]) -> RagR
         "브레이크 클램프(콜리퍼), 브레이크 패드입니다.\n"
         "참고 문서: BRAKE-AAA-DA1-00-00-00AA-041A-A"
     )
-    return RagResult(answer=answer, evidences=matching)
+    return _build_rag_result(answer=answer, evidences=matching)
 
 
 def _guard_bicycle_major_components_query(query: str, evidences: list[Evidence]) -> RagResult | None:
@@ -440,7 +449,7 @@ def _guard_bicycle_major_components_query(query: str, evidences: list[Evidence])
         "핸들바, 브레이크, 시프터, 크랭크, 페달, 체인입니다.\n"
         "참고 문서: S1000DBIKE-AAA-D00-00-00-00AA-041A-A"
     )
-    return RagResult(answer=answer, evidences=matching)
+    return _build_rag_result(answer=answer, evidences=matching)
 
 
 def _guard_brake_arm_description_query(query: str, evidences: list[Evidence]) -> RagResult | None:
@@ -460,7 +469,7 @@ def _guard_brake_arm_description_query(query: str, evidences: list[Evidence]) ->
         "브레이크 케이블과 연결되어 브레이크 패드가 바퀴 림에 마찰력을 만들도록 돕습니다.\n"
         "참고 문서: BRAKE-AAA-DA1-00-00-00AA-041A-A"
     )
-    return RagResult(answer=answer, evidences=matching)
+    return _build_rag_result(answer=answer, evidences=matching)
 
 
 def _guard_brake_cable_adjustment_location_query(query: str, evidences: list[Evidence]) -> RagResult | None:
@@ -482,7 +491,7 @@ def _guard_brake_cable_adjustment_location_query(query: str, evidences: list[Evi
         "해당 문서는 브레이크 케이블을 브레이크 시스템 구성품으로 설명합니다.\n"
         "참고 문서: BRAKE-AAA-DA1-00-00-00AA-041A-A"
     )
-    return RagResult(answer=answer, evidences=matching)
+    return _build_rag_result(answer=answer, evidences=matching)
 
 
 def _guard_brake_pad_cleaning_vs_manual_test_query(query: str, evidences: list[Evidence]) -> RagResult | None:
@@ -515,7 +524,7 @@ def _guard_brake_pad_cleaning_vs_manual_test_query(query: str, evidences: list[E
             "브레이크를 작동해 바퀴가 잠기고 자전거가 멈추는지 확인하는 작업입니다.\n"
             f"참고 문서: {dmc_text}"
         )
-        return RagResult(answer=answer, evidences=[*cleaning, *manual])
+        return _build_rag_result(answer=answer, evidences=[*cleaning, *manual])
 
     if cleaning:
         answer = (
@@ -524,7 +533,7 @@ def _guard_brake_pad_cleaning_vs_manual_test_query(query: str, evidences: list[E
             "브레이크 수동 테스트 절차는 제공된 문서에서 찾을 수 없습니다.\n"
             f"참고 문서: {dmc_text}"
         )
-        return RagResult(answer=answer, evidences=cleaning)
+        return _build_rag_result(answer=answer, evidences=cleaning)
 
     answer = (
         "문서에서 확인되는 작업은 브레이크 수동 테스트입니다. 브레이크 수동 테스트는 자전거를 세우고 앞으로 밀면서 "
@@ -532,7 +541,7 @@ def _guard_brake_pad_cleaning_vs_manual_test_query(query: str, evidences: list[E
         "브레이크 패드 청소 절차는 제공된 문서에서 찾을 수 없습니다.\n"
         f"참고 문서: {dmc_text}"
     )
-    return RagResult(answer=answer, evidences=manual)
+    return _build_rag_result(answer=answer, evidences=manual)
 
 
 def _guard_brake_manual_test_query(query: str, evidences: list[Evidence]) -> RagResult | None:
@@ -555,7 +564,7 @@ def _guard_brake_manual_test_query(query: str, evidences: list[Evidence]) -> Rag
         "브레이크를 작동하는 것입니다. 이때 바퀴가 잠기고 자전거가 멈추는지 확인합니다.\n"
         "참고 문서: BRAKE-AAA-DA1-00-00-00AA-341A-A"
     )
-    return RagResult(answer=answer, evidences=matching)
+    return _build_rag_result(answer=answer, evidences=matching)
 
 
 def _guard_chain_oil_query(query: str, evidences: list[Evidence]) -> RagResult | None:
@@ -574,7 +583,7 @@ def _guard_chain_oil_query(query: str, evidences: list[Evidence]) -> RagResult |
         "브레이크 시스템이나 바닥에 오일이 묻지 않도록 주의해야 합니다. "
         "참고 문서: S1000DBIKE-AAA-DA4-10-00-00AA-241A-A"
     )
-    return RagResult(answer=answer, evidences=matching)
+    return _build_rag_result(answer=answer, evidences=matching)
 
 
 def _guard_mixed_task_query(query: str, evidences: list[Evidence]) -> RagResult | None:
@@ -589,7 +598,7 @@ def _guard_mixed_task_query(query: str, evidences: list[Evidence]) -> RagResult 
         "브레이크 패드 교체 절차는 제공된 문서에서 찾을 수 없습니다.\n"
         "참고 문서: BRAKE-AAA-DA1-10-00-00AA-251A-A"
     )
-    return RagResult(answer=answer, evidences=cleaning)
+    return _build_rag_result(answer=answer, evidences=cleaning)
 
 
 def _guard_dmc_lookup_query(query: str, evidences: list[Evidence]) -> RagResult | None:
@@ -609,7 +618,7 @@ def _guard_dmc_lookup_query(query: str, evidences: list[Evidence]) -> RagResult 
     elif "케이블" in normalized or "cable" in normalized:
         label = "브레이크 케이블 설명 문서"
     answer = f"{label}의 DMC는 {ev.dmc}입니다."
-    return RagResult(answer=answer, evidences=evidences)
+    return _build_rag_result(answer=answer, evidences=evidences)
 
 
 def _guard_procedure_question(
@@ -692,7 +701,7 @@ def _procedure_noanswer(
         answer += f" 다만 관련 후보 문서는 확인되었습니다. 참고 문서: {', '.join(dmc_list)}"
     else:
         answer += " 참고 문서: 없음"
-    return RagResult(answer=answer, evidences=evidences)
+    return _build_rag_result(answer=answer, evidences=evidences)
 
 
 def _requested_procedure_label(

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from .dm import DmType
 
@@ -34,9 +34,40 @@ class Evidence(BaseModel):
     text: Optional[str] = None
 
 
+class ReferenceMaterialItem(BaseModel):
+    id: str
+    label: str | None = None
+    title: str | None = None
+    dmc: str | None = None
+    type: str | None = None
+    category: str | None = None
+    relation: str | None = None
+    source_dmc: str | None = None
+    target_dmc: str | None = None
+    text: str | None = None
+    metadata: dict[str, object] = Field(default_factory=dict)
+    # Internal deterministic ordering fields are serialized for traceability;
+    # UI callers can ignore them.
+    source_rank: int = 0
+    sort_key: str = ""
+
+
+class ReferenceMaterials(BaseModel):
+    data_modules: list[ReferenceMaterialItem] = Field(default_factory=list)
+    procedures: list[ReferenceMaterialItem] = Field(default_factory=list)
+    faults: list[ReferenceMaterialItem] = Field(default_factory=list)
+    references: list[ReferenceMaterialItem] = Field(default_factory=list)
+    warnings: list[ReferenceMaterialItem] = Field(default_factory=list)
+    cautions: list[ReferenceMaterialItem] = Field(default_factory=list)
+    figures: list[ReferenceMaterialItem] = Field(default_factory=list)
+    graphic_assets: list[ReferenceMaterialItem] = Field(default_factory=list)
+    hotspots: list[ReferenceMaterialItem] = Field(default_factory=list)
+
+
 class RagResult(BaseModel):
     answer: str
     evidences: list[Evidence]
+    reference_materials: ReferenceMaterials = Field(default_factory=ReferenceMaterials)
 
 
 class SessionMeta(BaseModel):

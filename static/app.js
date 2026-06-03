@@ -144,7 +144,7 @@ async function switchSession(sessionId) {
                 if (msg.role === 'user') {
                     appendUserMessage(msg.content);
                 } else if (msg.role === 'assistant') {
-                    appendAIMessage(msg.content, msg.evidences || [], msg.llm_sec || 0);
+                    appendAIMessage(msg.content, msg.evidences || [], msg.reference_materials || {}, msg.llm_sec || 0);
                 }
             });
         }
@@ -389,11 +389,11 @@ async function sendMessage() {
         updateTypingIndicator(typingId, jobProgressMessage(data));
         const completed = await pollChatJob(data.job_id, typingId);
         removeTypingIndicator(typingId);
-        appendAIMessage(completed.answer || '', completed.evidences || [], completed.llm_sec || 0);
+        appendAIMessage(completed.answer || '', completed.evidences || [], completed.reference_materials || {}, completed.llm_sec || 0);
         await loadSessions();
     } catch (e) {
         removeTypingIndicator(typingId);
-        appendAIMessage(`오류가 발생했습니다. ${escapeHtml(e.message || '서버 상태를 확인하세요.')}`, [], 0);
+        appendAIMessage(`오류가 발생했습니다. ${escapeHtml(e.message || '서버 상태를 확인하세요.')}`, [], {}, 0);
         console.error('Chat error:', e);
     } finally {
         activeJobId = null;
@@ -479,7 +479,68 @@ function appendUserMessage(text) {
     scrollToBottom();
 }
 
-function appendAIMessage(text, evidences, llmSec) {
+
+function renderReferenceMaterials(referenceMaterials) {
+    if (!referenceMaterials || typeof referenceMaterials !== 'object') return '';
+
+    const sections = [
+        ['warnings', '안전주의', 'warning'],
+        ['cautions', '주의사항', 'report'],
+        ['references', '참조 문서', 'article'],
+        ['procedures', '관련 절차', 'list_alt'],
+        ['faults', '관련 고장', 'build_circle'],
+        ['figures', '관련 그림', 'image'],
+        ['graphic_assets', '그래픽 자산', 'perm_media'],
+        ['hotspots', '핫스팟', 'touch_app'],
+    ];
+
+    const nonEmptySections = sections
+        .map(([key, label, icon]) => ({ key, label, icon, items: referenceMaterials[key] || [] }))
+        .filter(section => section.items.length > 0);
+
+    if (nonEmptySections.length === 0) return '';
+
+    const total = nonEmptySections.reduce((sum, section) => sum + section.items.length, 0);
+    const body = nonEmptySections.map(section => `
+        <div class="space-y-2">
+            <div class="flex items-center gap-1.5 text-[13px] font-bold text-on-surface">
+                <span class="material-symbols-outlined text-sm">${section.icon}</span>
+                ${section.label} (${section.items.length}건)
+            </div>
+            <div class="space-y-1.5">
+                ${section.items.map(item => renderReferenceMaterialItem(item)).join('')}
+            </div>
+        </div>
+    `).join('<hr class="border-outline-variant/10 my-3"/>');
+
+    const refId = 'ref-' + Date.now() + Math.random().toString(36).slice(2, 6);
+    return `
+        <div class="mt-4 bg-surface-container-lowest border border-outline-variant/10 rounded-xl overflow-hidden">
+            <button onclick="toggleEvidence('${refId}')" class="w-full px-4 py-2.5 text-[13px] font-semibold text-on-surface-variant cursor-pointer hover:bg-surface-container-low flex items-center gap-2">
+                <span class="material-symbols-outlined text-sm">fact_check</span>
+                참고자료 (${total}건)
+                <span class="material-symbols-outlined text-sm ml-auto evidence-chevron" id="${refId}-chevron">expand_more</span>
+            </button>
+            <div class="evidence-body" id="${refId}">
+                <div class="px-4 py-3 border-t border-outline-variant/10">${body}</div>
+            </div>
+        </div>
+    `;
+}
+
+function renderReferenceMaterialItem(item) {
+    const title = item.title || item.label || item.dmc || item.id || 'reference';
+    const meta = [item.dmc, item.relation, item.type].filter(Boolean).join(' · ');
+    return `
+        <div class="rounded-lg bg-surface-container-low px-3 py-2 text-[13px]">
+            <div class="font-semibold text-on-surface">${escapeHtml(title)}</div>
+            ${meta ? `<div class="font-mono text-[11px] text-outline mt-0.5">${escapeHtml(meta)}</div>` : ''}
+            ${item.text ? `<div class="text-on-surface-variant mt-1 line-clamp-2">${escapeHtml(item.text)}</div>` : ''}
+        </div>
+    `;
+}
+
+function appendAIMessage(text, evidences, referenceMaterials, llmSec) {
     const canvas = document.getElementById('chat-canvas');
     const div = document.createElement('div');
     div.className = 'flex items-start gap-4 msg-enter';
@@ -517,6 +578,8 @@ function appendAIMessage(text, evidences, llmSec) {
         `;
     }
 
+    const referenceMaterialsHtml = renderReferenceMaterials(referenceMaterials);
+
     const metricsHtml = llmSec > 0
         ? `<div class="flex items-center gap-3 mt-3 text-[12px] text-outline">
                <span class="material-symbols-outlined text-xs">psychology</span> 추론 ${llmSec.toFixed(1)}s
@@ -540,6 +603,7 @@ function appendAIMessage(text, evidences, llmSec) {
                 </div>
             </div>
             ${evidenceHtml}
+            ${referenceMaterialsHtml}
             ${metricsHtml}
         </div>
     `;
