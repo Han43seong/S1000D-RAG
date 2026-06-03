@@ -64,3 +64,77 @@ def test_collect_reference_materials_matches_shortened_ontology_dmc_variants():
 
     assert any(item.title == "Cantilever brake with straddle cable" for item in materials.figures)
     assert any(item.id.startswith("asset:ICN-") for item in materials.graphic_assets)
+
+
+def test_resolve_graphic_asset_preview_finds_browser_renderable_by_icn(tmp_path):
+    from src.rag.evidence_trail import resolve_graphic_asset_preview
+
+    (tmp_path / "ICN-TEST-ASSET-001-01.JPG").write_bytes(b"jpg")
+
+    preview = resolve_graphic_asset_preview({"icn": "ICN-TEST-ASSET-001-01"}, asset_root=tmp_path)
+
+    assert preview.preview_available is True
+    assert preview.preview_status == "available"
+    assert preview.asset_format == "jpg"
+    assert preview.preview_url == "/assets/graphic/ICN-TEST-ASSET-001-01.jpg"
+    assert preview.original_url == "/assets/graphic/ICN-TEST-ASSET-001-01.jpg"
+
+
+def test_resolve_graphic_asset_preview_rejects_unknown_metadata_extension(tmp_path):
+    from src.rag.evidence_trail import resolve_graphic_asset_preview
+
+    (tmp_path / "ICN-TEST-ASSET-001-01.PNG").write_bytes(b"png")
+
+    preview = resolve_graphic_asset_preview({"icn": "ICN-TEST-ASSET-001-01.exe"}, asset_root=tmp_path)
+
+    assert preview.preview_available is False
+    assert preview.preview_status == "missing"
+    assert preview.preview_url is None
+
+
+def test_resolve_graphic_asset_preview_prefers_png_and_handles_cgm_only(tmp_path):
+    from src.rag.evidence_trail import resolve_graphic_asset_preview
+
+    (tmp_path / "ICN-MULTI-001-01.SVG").write_text("<svg />", encoding="utf-8")
+    (tmp_path / "ICN-MULTI-001-01.PNG").write_bytes(b"png")
+    (tmp_path / "ICN-CGM-ONLY-001-01.CGM").write_bytes(b"cgm")
+
+    png_preview = resolve_graphic_asset_preview({"icn": "ICN-MULTI-001-01"}, asset_root=tmp_path)
+    cgm_preview = resolve_graphic_asset_preview({"icn": "ICN-CGM-ONLY-001-01"}, asset_root=tmp_path)
+
+    assert png_preview.asset_format == "png"
+    assert png_preview.preview_url == "/assets/graphic/ICN-MULTI-001-01.png"
+    assert cgm_preview.preview_available is False
+    assert cgm_preview.preview_status == "unsupported_cgm"
+    assert cgm_preview.asset_format == "cgm"
+    assert cgm_preview.preview_url is None
+    assert cgm_preview.original_url == "/assets/graphic/ICN-CGM-ONLY-001-01.cgm"
+
+
+def test_collect_reference_materials_adds_graphic_asset_preview_fields(tmp_path):
+    graph = {
+        "nodes": [
+            {"id": "dm:DMC-A", "type": "DataModule", "label": "Main DM", "properties": {"dmc": "DMC-A"}},
+            {"id": "figure:DMC-A:fig-1", "type": "Figure", "label": "Brake figure", "properties": {"dmc": "DMC-A"}},
+            {"id": "asset:ICN-PREVIEW-001-01", "type": "GraphicAsset", "label": "Preview asset", "properties": {"icn": "ICN-PREVIEW-001-01"}},
+        ],
+        "edges": [
+            {"source": "dm:DMC-A", "predicate": "HAS_FIGURE", "target": "figure:DMC-A:fig-1", "properties": {}},
+            {"source": "figure:DMC-A:fig-1", "predicate": "USES_ASSET", "target": "asset:ICN-PREVIEW-001-01", "properties": {}},
+        ],
+    }
+    graph_path = tmp_path / "graph.json"
+    graph_path.write_text(json.dumps(graph), encoding="utf-8")
+    (tmp_path / "ICN-PREVIEW-001-01.PNG").write_bytes(b"png")
+
+    materials = collect_reference_materials(
+        [Evidence(dmc="DMC-A", chunk_id="c1", score=0.9)],
+        graph_path=graph_path,
+        asset_root=tmp_path,
+    )
+
+    asset = materials.graphic_assets[0]
+    assert asset.preview_available is True
+    assert asset.preview_status == "available"
+    assert asset.asset_format == "png"
+    assert asset.preview_url == "/assets/graphic/ICN-PREVIEW-001-01.png"

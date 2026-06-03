@@ -46,6 +46,11 @@ class ReferenceMaterialItem(BaseModel):
     target_dmc: str | None = None
     text: str | None = None
     metadata: dict[str, object] = Field(default_factory=dict)
+    preview_url: str | None = None
+    original_url: str | None = None
+    asset_format: str | None = None
+    preview_available: bool = False
+    preview_status: str | None = None
     # Internal deterministic ordering fields are serialized for traceability;
     # UI callers can ignore them.
     source_rank: int = 0

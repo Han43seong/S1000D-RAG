@@ -530,12 +530,39 @@ function renderReferenceMaterials(referenceMaterials) {
 
 function renderReferenceMaterialItem(item) {
     const title = item.title || item.label || item.dmc || item.id || 'reference';
-    const meta = [item.dmc, item.relation, item.type].filter(Boolean).join(' · ');
+    const meta = [item.dmc, item.relation, item.type, item.asset_format].filter(Boolean).join(' · ');
+    const graphicPreview = renderGraphicAssetPreview(item, title);
     return `
         <div class="rounded-lg bg-surface-container-low px-3 py-2 text-[13px]">
+            ${graphicPreview}
             <div class="font-semibold text-on-surface">${escapeHtml(title)}</div>
             ${meta ? `<div class="font-mono text-[11px] text-outline mt-0.5">${escapeHtml(meta)}</div>` : ''}
             ${item.text ? `<div class="text-on-surface-variant mt-1 line-clamp-2">${escapeHtml(item.text)}</div>` : ''}
+        </div>
+    `;
+}
+
+function renderGraphicAssetPreview(item, title) {
+    if (!item || item.type !== 'GraphicAsset') return '';
+    if (item.preview_url) {
+        return `
+            <a href="${escapeHtml(item.original_url || item.preview_url)}" target="_blank" rel="noopener" class="block mb-2 rounded-lg overflow-hidden border border-outline-variant/20 bg-white">
+                <img src="${escapeHtml(item.preview_url)}" alt="${escapeHtml(title)}" class="w-full max-h-48 object-contain bg-white" loading="lazy"/>
+            </a>
+        `;
+    }
+    const statusLabels = {
+        unsupported_cgm: 'CGM 형식은 브라우저 미리보기를 지원하지 않습니다.',
+        missing: '미리보기 없음: 자산 파일을 찾을 수 없습니다.',
+    };
+    const label = statusLabels[item.preview_status] || '미리보기 없음';
+    const download = item.original_url
+        ? `<a href="${escapeHtml(item.original_url)}" target="_blank" rel="noopener" class="underline underline-offset-2">원본 열기</a>`
+        : '';
+    return `
+        <div class="mb-2 rounded-lg border border-dashed border-outline-variant/30 bg-surface-container-lowest px-3 py-2 text-[12px] text-on-surface-variant">
+            <span class="font-semibold">${escapeHtml(label)}</span>
+            ${download}
         </div>
     `;
 }

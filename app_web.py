@@ -26,6 +26,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from src.types.rag import ReferenceMaterials
+from src.rag.evidence_trail import DEFAULT_GRAPHIC_ASSET_ROOT, resolve_graphic_asset_file
 
 from src.config import (
     CHROMA_COLLECTION_NAME,
@@ -79,6 +80,16 @@ app.add_middleware(
 
 # Static files
 STATIC_DIR = Path(__file__).parent / "static"
+GRAPHIC_ASSET_ROOT = DEFAULT_GRAPHIC_ASSET_ROOT
+_GRAPHIC_MEDIA_TYPES = {
+    "png": "image/png",
+    "jpg": "image/jpeg",
+    "jpeg": "image/jpeg",
+    "svg": "image/svg+xml",
+    "gif": "image/gif",
+    "webp": "image/webp",
+    "cgm": "application/octet-stream",
+}
 app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
 
@@ -328,6 +339,15 @@ class ConfigResponse(BaseModel):
 @app.get("/")
 async def index():
     return FileResponse(STATIC_DIR / "index.html")
+
+
+@app.get("/assets/graphic/{asset_name}")
+async def get_graphic_asset(asset_name: str):
+    asset_path = resolve_graphic_asset_file(asset_name, asset_root=GRAPHIC_ASSET_ROOT)
+    if asset_path is None:
+        raise HTTPException(status_code=404, detail="Graphic asset not found")
+    media_type = _GRAPHIC_MEDIA_TYPES.get(asset_path.suffix.lower().lstrip("."), "application/octet-stream")
+    return FileResponse(asset_path, media_type=media_type, filename=asset_path.name)
 
 
 # ══════════════════════════════════════════════════════════════════════

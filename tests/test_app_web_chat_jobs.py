@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import asyncio
 
-from fastapi.testclient import TestClient
-
+import pytest
+from fastapi.responses import FileResponse
 import app_web
 
 
@@ -101,14 +101,11 @@ def test_format_answer_for_display_removes_short_incomplete_tail():
 def test_create_chat_job_returns_job_id_without_running_llm(monkeypatch):
     _reset_jobs(monkeypatch)
 
-    client = TestClient(app_web.app)
-    response = client.post(
-        "/api/chat/jobs",
-        json={"session_id": "unit-session", "question": "브레이크 절차는?"},
+    response = asyncio.run(
+        app_web.create_chat_job(app_web.ChatRequest(session_id="unit-session", question="브레이크 절차는?"))
     )
 
-    assert response.status_code == 202
-    data = response.json()
+    data = response.model_dump()
     assert data["job_id"]
     assert data["status"] == "queued"
     assert data["progress"] == "queued"
@@ -120,16 +117,13 @@ def test_create_chat_job_returns_job_id_without_running_llm(monkeypatch):
 
 def test_get_chat_job_status_returns_existing_job(monkeypatch):
     _reset_jobs(monkeypatch)
-    client = TestClient(app_web.app)
-    created = client.post(
-        "/api/chat/jobs",
-        json={"session_id": "unit-session", "question": "DMC가 뭐야?"},
-    ).json()
+    created = asyncio.run(
+        app_web.create_chat_job(app_web.ChatRequest(session_id="unit-session", question="DMC가 뭐야?"))
+    ).model_dump()
 
-    response = client.get(f"/api/chat/jobs/{created['job_id']}")
+    response = asyncio.run(app_web.get_chat_job(created["job_id"]))
 
-    assert response.status_code == 200
-    data = response.json()
+    data = response.model_dump()
     assert data["job_id"] == created["job_id"]
     assert data["status"] == "queued"
     assert data["progress"] == "queued"
@@ -137,36 +131,31 @@ def test_get_chat_job_status_returns_existing_job(monkeypatch):
 
 def test_cancel_queued_chat_job_marks_cancelled(monkeypatch):
     _reset_jobs(monkeypatch)
-    client = TestClient(app_web.app)
-    created = client.post(
-        "/api/chat/jobs",
-        json={"session_id": "unit-session", "question": "취소 테스트"},
-    ).json()
+    created = asyncio.run(
+        app_web.create_chat_job(app_web.ChatRequest(session_id="unit-session", question="취소 테스트"))
+    ).model_dump()
 
-    response = client.delete(f"/api/chat/jobs/{created['job_id']}")
+    response = asyncio.run(app_web.cancel_chat_job(created["job_id"]))
 
-    assert response.status_code == 200
-    data = response.json()
+    data = response.model_dump()
     assert data["status"] == "cancelled"
     assert data["progress"] == "cancelled"
 
 
 def test_create_chat_job_rejects_when_another_job_is_active(monkeypatch):
     _reset_jobs(monkeypatch)
-    client = TestClient(app_web.app)
-    created = client.post(
-        "/api/chat/jobs",
-        json={"session_id": "unit-session", "question": "첫 질문"},
-    ).json()
+    created = asyncio.run(
+        app_web.create_chat_job(app_web.ChatRequest(session_id="unit-session", question="첫 질문"))
+    ).model_dump()
     monkeypatch.setattr(app_web, "_active_job_id", created["job_id"])
 
-    response = client.post(
-        "/api/chat/jobs",
-        json={"session_id": "unit-session", "question": "두 번째 질문"},
-    )
+    with pytest.raises(app_web.HTTPException) as exc_info:
+        asyncio.run(
+            app_web.create_chat_job(app_web.ChatRequest(session_id="unit-session", question="두 번째 질문"))
+        )
 
-    assert response.status_code == 409
-    assert "이미 답변을 생성 중" in response.json()["detail"]
+    assert exc_info.value.status_code == 409
+    assert "이미 답변을 생성 중" in exc_info.value.detail
 
 
 def test_run_chat_job_records_done_result(monkeypatch):
@@ -296,3 +285,56 @@ def test_chat_sync_persists_reference_materials_in_session(monkeypatch):
     message = app_web.sessions_db["session-ref"]["messages"][-1]
     assert message["content"] == "자연어 답변만"
     assert message["reference_materials"]["warnings"][0]["id"] == "warning:1"
+
+
+def test_graphic_asset_endpoint_serves_known_asset_and_rejects_unsafe(monkeypatch, tmp_path):
+    (tmp_path / "ICN-SAFE-001-01.PNG").write_bytes(b"png")
+    monkeypatch.setattr(app_web, "GRAPHIC_ASSET_ROOT", tmp_path)
+
+    ok = asyncio.run(app_web.get_graphic_asset("ICN-SAFE-001-01.png"))
+
+    assert isinstance(ok, FileResponse)
+    assert ok.media_type == "image/png"
+    with pytest.raises(app_web.HTTPException) as traversal:
+        asyncio.run(app_web.get_graphic_asset("../secret.png"))
+    with pytest.raises(app_web.HTTPException) as unsafe_ext:
+        asyncio.run(app_web.get_graphic_asset("ICN-SAFE-001-01.exe"))
+    assert traversal.value.status_code == 404
+    assert unsafe_ext.value.status_code == 404
+
+
+def test_chat_response_serializes_graphic_preview_fields():
+    response = app_web.ChatResponse(
+        answer="자연어 답변만",
+        evidences=[],
+        reference_materials={
+            "graphic_assets": [
+                {
+                    "id": "asset:ICN-PREVIEW-001-01",
+                    "label": "Preview asset",
+                    "type": "GraphicAsset",
+                    "preview_url": "/assets/graphic/ICN-PREVIEW-001-01.png",
+                    "original_url": "/assets/graphic/ICN-PREVIEW-001-01.png",
+                    "asset_format": "png",
+                    "preview_available": True,
+                    "preview_status": "available",
+                }
+            ]
+        },
+    )
+
+    payload = response.model_dump()
+    asset = payload["reference_materials"]["graphic_assets"][0]
+    assert asset["preview_available"] is True
+    assert asset["preview_url"] == "/assets/graphic/ICN-PREVIEW-001-01.png"
+    assert asset["asset_format"] == "png"
+
+
+def test_static_app_renders_graphic_asset_preview_and_fallback():
+    js = open("static/app.js", encoding="utf-8").read()
+
+    assert "<img" in js
+    assert "preview_url" in js
+    assert "preview_status" in js
+    assert "unsupported_cgm" in js
+    assert "미리보기 없음" in js
