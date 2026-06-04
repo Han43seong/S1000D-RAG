@@ -126,19 +126,21 @@ def _korean_user_fallback(plan: AnswerPlan) -> str:
     subject = _subject_from_query(plan.query)
     if plan.intent.value == "procedure":
         lines = [f"{subject} 절차는 다음과 같습니다."]
-        for idx, claim in enumerate(_dedupe_claim_texts(plan), start=1):
-            lines.append(f"{idx}. {_rewrite_evidence_sentence_to_korean(claim)}")
+        for idx, claim in enumerate(_rewrite_claims_to_korean(plan), start=1):
+            lines.append(f"{idx}. {claim}")
         return "\n".join(lines).strip()
 
     lines = [f"{subject}에 대해 문서 근거 기준으로 설명하면 다음과 같습니다."]
-    for claim in _dedupe_claim_texts(plan):
-        lines.append(f"- {_rewrite_evidence_sentence_to_korean(claim)}")
+    for claim in _rewrite_claims_to_korean(plan):
+        lines.append(f"- {claim}")
     return "\n".join(lines).strip()
 
 
 def _subject_from_query(query: str) -> str:
     if "앞바퀴" in query or "front wheel" in query.lower():
         return "앞바퀴 설치"
+    if "브레이크 시스템" in query or "brake system" in query.lower():
+        return "브레이크 시스템"
     if "브레이크" in query or "brake" in query.lower():
         return "브레이크 정비"
     return "정비 작업"
@@ -156,10 +158,34 @@ def _dedupe_claim_texts(plan: AnswerPlan) -> list[str]:
     return texts[:8]
 
 
+def _rewrite_claims_to_korean(plan: AnswerPlan) -> list[str]:
+    rewritten: list[str] = []
+    seen: set[str] = set()
+    for claim in _dedupe_claim_texts(plan):
+        korean = _rewrite_evidence_sentence_to_korean(claim)
+        if not korean or korean in seen:
+            continue
+        seen.add(korean)
+        rewritten.append(korean)
+    if rewritten:
+        return rewritten[:8]
+    return ["확인된 근거 문서가 있지만 사용자 답변으로 안전하게 재작성할 수 있는 핵심 문장이 부족합니다. 원문 근거를 함께 확인해 주세요."]
+
+
 def _rewrite_evidence_sentence_to_korean(text: str) -> str:
     original = re.sub(r"\s+", " ", text).strip().rstrip(".")
     lowered = original.lower()
     replacements = [
+        ("has these primary components", "브레이크 시스템은 브레이크 레버, 브레이크 케이블, 브레이크 암, 브레이크 클램프(캘리퍼), 브레이크 패드로 구성됩니다"),
+        ("the brake lever the brake cable the brake arm the brake clamp", "브레이크 레버, 브레이크 케이블, 브레이크 암, 브레이크 클램프가 주요 구성품입니다"),
+        ("also known as callipers", "브레이크 클램프는 캘리퍼라고도 부릅니다"),
+        ("a cable that goes from the brake levers on the handlebars pulls the two levers on the brakes together", "핸들바의 브레이크 레버에서 이어진 케이블이 브레이크 쪽 두 레버를 함께 당깁니다"),
+        ("presses the brake pads against the outer rim of the wheel", "브레이크 패드가 바퀴의 바깥쪽 림을 누릅니다"),
+        ("decreases the speed of the bicycle", "이 마찰로 자전거 속도가 줄어듭니다"),
+        ("there are four brake pads", "자전거에는 브레이크 패드가 네 개 있습니다"),
+        ("two are found on the front wheel and two on the rear wheel", "앞바퀴와 뒷바퀴에 각각 두 개씩 배치됩니다"),
+        ("the brake pads are made out of hard wearing rubber", "브레이크 패드는 내마모성 고무로 만들어집니다"),
+        ("the pads press against the rim of the wheel to cause friction", "패드가 바퀴 림을 눌러 마찰을 발생시킵니다"),
         ("install the fork and the brakes before installing the wheel", "바퀴를 설치하기 전에 포크와 브레이크가 먼저 장착되어 있는지 확인합니다"),
         ("install the fork before installing the wheel", "바퀴를 설치하기 전에 포크가 먼저 장착되어 있는지 확인합니다"),
         ("hold the front of the bicycle", "자전거 앞부분을 안정적으로 잡습니다"),
@@ -180,7 +206,7 @@ def _rewrite_evidence_sentence_to_korean(text: str) -> str:
         return " ".join(part.rstrip(".") + "." for part in dict.fromkeys(translated_parts))
     if _contains_hangul(original):
         return original + "."
-    return "문서에 확인된 해당 절차 항목을 근거 문서 순서에 따라 수행합니다."
+    return ""
 
 
 def _ensure_citations(answer: str, citations: tuple[str, ...]) -> str:

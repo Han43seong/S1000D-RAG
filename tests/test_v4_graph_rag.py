@@ -344,3 +344,50 @@ def test_v4_verbalizer_rewrites_english_evidence_to_clean_korean_user_answer():
     assert "AnswerPlan" not in answer
     assert "[DMC:" not in answer
     assert "근거 DMC: S1000DBIKE-AAA-DA0-30-00-00AA-720A-A" in answer
+
+
+def test_v4_verbalizer_rewrites_brake_system_descriptive_evidence_to_korean():
+    plan = AnswerPlan(
+        query="브레이크 시스템 원리에 대해 설명해줘",
+        intent=Intent.DESCRIBE,
+        detail_level=DetailLevel.DETAILED,
+        audience="technician",
+        claims=(
+            AnswerClaim(
+                text="The brake system has these primary components: the brake lever the brake cable the brake arm the brake clamp also known as callipers the brake pads.",
+                evidence_dmcs=("BRAKE-AAA-DA1-00-00-00AA-041A-A",),
+            ),
+            AnswerClaim(
+                text="A cable that goes from the brake levers on the handlebars pulls the two levers on the brakes together.",
+                evidence_dmcs=("BRAKE-AAA-DA1-00-00-00AA-041A-A",),
+            ),
+            AnswerClaim(
+                text="This presses the brake pads against the outer rim of the wheel, which decreases the speed of the bicycle.",
+                evidence_dmcs=("BRAKE-AAA-DA1-00-00-00AA-041A-A",),
+            ),
+        ),
+        required_citations=("BRAKE-AAA-DA1-00-00-00AA-041A-A",),
+        forbidden_claims=("unsupported procedure steps",),
+        sections=("구성 관계", "작동 흐름", "정비상 의미", "근거 문서"),
+    )
+
+    class EnglishLLM:
+        def invoke(self, _prompt):
+            return (
+                "The brake system has these primary components: the brake lever the brake cable the brake arm the brake clamp also known as callipers the brake pads. "
+                "A cable that goes from the brake levers on the handlebars pulls the two levers on the brakes together. "
+                "This presses the brake pads against the outer rim of the wheel, which decreases the speed of the bicycle."
+            )
+
+    answer = verbalize_answer_plan(plan, llm=EnglishLLM())
+
+    assert answer.startswith("브레이크 시스템에 대해")
+    assert "브레이크 레버" in answer
+    assert "브레이크 케이블" in answer
+    assert "브레이크 패드" in answer
+    assert "림" in answer
+    assert "속도" in answer
+    assert "문서에 확인된 해당 절차 항목" not in answer
+    assert "The brake system" not in answer
+    assert "A cable that goes" not in answer
+    assert "근거 DMC: BRAKE-AAA-DA1-00-00-00AA-041A-A" in answer
