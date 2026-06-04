@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from langchain_core.documents import Document
-from langsmith import traceable
+from src.tracing import traceable
 
 from src.config import CHROMA_PERSIST_DIR, MAX_CONTEXT_CHARS, RERANK_TOP_K, VECTOR_CANDIDATE_K
 from src.types.rag import Evidence, RagOptions, RagResult, RerankOptions, SessionMeta

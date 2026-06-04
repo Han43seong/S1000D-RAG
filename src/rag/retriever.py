@@ -10,7 +10,7 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
 from langchain_core.documents import Document
-from langsmith import traceable
+from src.tracing import traceable
 
 if TYPE_CHECKING:
     from langchain_core.vectorstores import VectorStore

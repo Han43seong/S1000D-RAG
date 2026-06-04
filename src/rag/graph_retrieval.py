@@ -15,7 +15,7 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any, Iterable
 
-from langsmith import traceable
+from src.tracing import traceable
 
 from src.config import S1000D_GRAPH_MANIFEST_PATH
 

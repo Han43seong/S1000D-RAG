@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from langsmith import traceable
+from src.tracing import traceable
 
 
 # ── 한→영 도메인 용어 확장 사전 ──

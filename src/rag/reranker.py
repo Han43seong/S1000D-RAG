@@ -9,7 +9,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from langchain_core.documents import Document
-from langsmith import traceable
+from src.tracing import traceable
 
 from src.types.rag import RerankOptions
 
