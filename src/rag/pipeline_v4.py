@@ -7,6 +7,7 @@ a richer graph resolver and stronger quality gates.
 """
 from __future__ import annotations
 
+import os
 from typing import TYPE_CHECKING
 
 from langsmith import traceable
@@ -15,7 +16,7 @@ from src.types.rag import RagOptions, RagResult, SessionMeta
 
 from .evidence_trail import collect_reference_materials
 from .ontology import check_answer_quality, load_ontology_manifest, parse_query, plan_evidence, resolve_ontology, retrieve_evidence
-from .v4 import RdfOntologyStore, build_answer_plan, build_graph_context, verbalize_answer_plan
+from .v4 import RdfResolution, build_answer_plan, build_graph_context, build_rdf_ontology_store, verbalize_answer_plan
 
 if TYPE_CHECKING:
     from langchain_core.language_models import BaseLLM
@@ -60,7 +61,7 @@ def run_rag_query_sync(
     parsed = parse_query(query)
     nodes = load_ontology_manifest()
     graph = build_graph_context(nodes)
-    rdf_store = RdfOntologyStore.from_nodes(nodes)
+    rdf_store = build_rdf_ontology_store(nodes, sparql_endpoint=os.getenv("S1000D_SPARQL_ENDPOINT"))
     rdf_resolution = rdf_store.resolve_query(parsed)
     resolution = resolve_ontology(parsed, nodes)
     max_chunks = (options.top_k if options else 6) or 6

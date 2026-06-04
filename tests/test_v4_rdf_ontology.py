@@ -1,5 +1,5 @@
 from src.rag.ontology import Intent, OntologyNode, ParsedQuery
-from src.rag.v4.rdf_exporter import export_ontology_turtle, ontology_nodes_to_triples
+from src.rag.v4.rdf_exporter import export_ontology_jsonld, export_ontology_turtle, ontology_nodes_to_triples
 from src.rag.v4.rdf_resolver import RdfOntologyStore
 
 
@@ -44,6 +44,25 @@ def test_ontology_nodes_export_to_rdf_triples_and_turtle():
     assert "@prefix s1000d:" in turtle
     assert "s1000d:ProceduralDataModule" in turtle
     assert "Brake pad - Clean" in turtle
+
+
+def test_ontology_nodes_export_to_jsonld_graph():
+    jsonld = export_ontology_jsonld(_sample_nodes())
+
+    assert jsonld["@context"]["s1000d"] == "https://example.org/s1000d/"
+    graph = jsonld["@graph"]
+    brake_desc = next(item for item in graph if item.get("s1000d:dmc") == "BRAKE-DESC")
+
+    assert brake_desc["@id"] == "https://example.org/s1000d/dm/BRAKE-DESC"
+    assert brake_desc["@type"] == "s1000d:DescriptiveDataModule"
+    assert brake_desc["s1000d:describes"]["@id"] == "https://example.org/s1000d/entity/brake-system"
+    assert {component["@id"] for component in brake_desc["s1000d:hasComponent"]} >= {
+        "https://example.org/s1000d/entity/brake-lever",
+        "https://example.org/s1000d/entity/brake-pad",
+    }
+
+    brake_clean = next(item for item in graph if item.get("s1000d:dmc") == "BRAKE-PAD-CLEAN")
+    assert brake_clean["s1000d:hasAction"]["@id"] == "https://example.org/s1000d/action/clean"
 
 
 def test_rdf_store_resolves_description_and_procedure_with_sparql_like_queries():

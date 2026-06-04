@@ -35,6 +35,7 @@ class AnswerPlan:
     required_citations: tuple[str, ...]
     forbidden_claims: tuple[str, ...]
     sections: tuple[str, ...]
+    graph_paths: tuple[str, ...] = ()
 
 
 def build_answer_plan(
@@ -47,8 +48,10 @@ def build_answer_plan(
     if graph_context is not None:
         related = graph_context.related_dmcs_for_target(parsed.target)
         citations = tuple(dict.fromkeys((*citations, *related)))
+    graph_paths: tuple[str, ...] = ()
     if rdf_resolution is not None:
         citations = tuple(dict.fromkeys((*citations, *rdf_resolution.primary_dmcs, *rdf_resolution.related_dmcs)))
+        graph_paths = rdf_resolution.graph_paths
     claims = tuple(_claim_from_document(doc) for doc in documents if doc.page_content.strip() and doc.metadata.get("dmc"))
     if not claims and citations:
         claims = (AnswerClaim(text="관련 S1000D 문서가 확인되었습니다.", evidence_dmcs=citations),)
@@ -62,6 +65,7 @@ def build_answer_plan(
         required_citations=citations,
         forbidden_claims=_forbidden_claims(parsed.intent),
         sections=_sections_for(parsed),
+        graph_paths=graph_paths,
     )
 
 

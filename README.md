@@ -195,6 +195,25 @@ The LLM explains the evidence.
 The quality gate decides whether the answer is safe to show.
 ```
 
+Current RDF/OWL transition utilities:
+
+```bash
+# Export the ontology manifest as Turtle/JSON-LD for GraphDB/Fuseki-compatible loading.
+python scripts/export_ontology_rdf.py --output data/ontology/s1000d.ttl
+python scripts/export_ontology_rdf.py --format jsonld --output data/ontology/s1000d.jsonld
+
+# Validate the ontology manifest against local SHACL-like shape rules.
+python scripts/validate_ontology_shapes.py
+
+# Run v4 locally with the in-memory RDF resolver.
+S1000D_RAG_PIPELINE=v4 python query.py "브레이크 작동원리를 자세히 설명해줘"
+
+# Optional future backend: route v4 RDF resolution to a SPARQL endpoint.
+S1000D_RAG_PIPELINE=v4 \
+S1000D_SPARQL_ENDPOINT=http://localhost:7200/repositories/s1000d \
+python query.py "브레이크 패드 청소 절차 알려줘"
+```
+
 ---
 
 ## 6. Representative demo questions

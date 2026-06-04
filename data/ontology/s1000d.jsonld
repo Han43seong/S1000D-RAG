@@ -1,0 +1,983 @@
+{
+  "@context": {
+    "s1000d": "https://example.org/s1000d/",
+    "rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
+    "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+    "owl": "http://www.w3.org/2002/07/owl#",
+    "xsd": "http://www.w3.org/2001/XMLSchema#"
+  },
+  "@graph": [
+    {
+      "@id": "s1000d:DataModule",
+      "@type": "owl:Class"
+    },
+    {
+      "@id": "s1000d:DescriptiveDataModule",
+      "rdfs:subClassOf": {
+        "@id": "s1000d:DataModule"
+      }
+    },
+    {
+      "@id": "s1000d:ProceduralDataModule",
+      "rdfs:subClassOf": {
+        "@id": "s1000d:DataModule"
+      }
+    },
+    {
+      "@id": "s1000d:FaultDataModule",
+      "rdfs:subClassOf": {
+        "@id": "s1000d:DataModule"
+      }
+    },
+    {
+      "@id": "s1000d:System",
+      "@type": "owl:Class"
+    },
+    {
+      "@id": "s1000d:Component",
+      "@type": "owl:Class"
+    },
+    {
+      "@id": "s1000d:Action",
+      "@type": "owl:Class"
+    },
+    {
+      "@id": "https://example.org/s1000d/dm/BRAKE-AAA-DA1-00-00-00AA-041A-A",
+      "@type": "s1000d:DescriptiveDataModule",
+      "s1000d:dmc": "BRAKE-AAA-DA1-00-00-00AA-041A-A",
+      "rdfs:label": "Brake system - Description",
+      "s1000d:dmType": "descriptive",
+      "s1000d:snsCode": "DA1",
+      "s1000d:describes": {
+        "@id": "https://example.org/s1000d/entity/brake-system"
+      },
+      "s1000d:alias": [
+        "브레이크",
+        "브레이크 시스템",
+        "brake",
+        "brake system"
+      ],
+      "s1000d:hasComponent": [
+        {
+          "@id": "https://example.org/s1000d/entity/%EB%B8%8C%EB%A0%88%EC%9D%B4%ED%81%AC-%EB%A0%88%EB%B2%84"
+        },
+        {
+          "@id": "https://example.org/s1000d/entity/%EB%B8%8C%EB%A0%88%EC%9D%B4%ED%81%AC-%EC%BC%80%EC%9D%B4%EB%B8%94"
+        },
+        {
+          "@id": "https://example.org/s1000d/entity/%EB%B8%8C%EB%A0%88%EC%9D%B4%ED%81%AC-%EC%95%94"
+        },
+        {
+          "@id": "https://example.org/s1000d/entity/%EB%B8%8C%EB%A0%88%EC%9D%B4%ED%81%AC-%ED%8C%A8%EB%93%9C"
+        }
+      ]
+    },
+    {
+      "@id": "https://example.org/s1000d/dm/BRAKE-AAA-DA1-00-00-00AA-341A-A",
+      "@type": "s1000d:ProceduralDataModule",
+      "s1000d:dmc": "BRAKE-AAA-DA1-00-00-00AA-341A-A",
+      "rdfs:label": "Brake system - Manual test",
+      "s1000d:dmType": "procedural",
+      "s1000d:snsCode": "DA1",
+      "s1000d:hasTarget": {
+        "@id": "https://example.org/s1000d/entity/brake-system"
+      },
+      "s1000d:hasAction": {
+        "@id": "https://example.org/s1000d/action/test"
+      },
+      "s1000d:alias": [
+        "브레이크 시스템",
+        "브레이크",
+        "brake system",
+        "brake",
+        "점검",
+        "검사",
+        "시험",
+        "테스트",
+        "확인",
+        "test",
+        "check",
+        "inspection"
+      ]
+    },
+    {
+      "@id": "https://example.org/s1000d/dm/BRAKE-AAA-DA1-10-00-00AA-251A-A",
+      "@type": "s1000d:ProceduralDataModule",
+      "s1000d:dmc": "BRAKE-AAA-DA1-10-00-00AA-251A-A",
+      "rdfs:label": "Brake pads - Clean with rubbing alcohol",
+      "s1000d:dmType": "procedural",
+      "s1000d:snsCode": "DA1",
+      "s1000d:hasTarget": {
+        "@id": "https://example.org/s1000d/entity/brake-pad"
+      },
+      "s1000d:hasAction": {
+        "@id": "https://example.org/s1000d/action/clean"
+      },
+      "s1000d:alias": [
+        "브레이크 패드",
+        "브레이크패드",
+        "brake pad",
+        "brake pads",
+        "청소",
+        "세척",
+        "clean"
+      ]
+    },
+    {
+      "@id": "https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-00-00AA-121A-A",
+      "@type": "s1000d:ProceduralDataModule",
+      "s1000d:dmc": "S1000DBIKE-AAA-D00-00-00-00AA-121A-A",
+      "rdfs:label": "Bicycle - Pre-operation procedures (crew)",
+      "s1000d:dmType": "procedural",
+      "s1000d:snsCode": "D00",
+      "s1000d:hasTarget": {
+        "@id": "https://example.org/s1000d/entity/bicycle"
+      },
+      "s1000d:hasAction": {
+        "@id": "https://example.org/s1000d/action/pre-operation-crew"
+      }
+    },
+    {
+      "@id": "https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-00-00AA-151A-A",
+      "@type": "s1000d:ProceduralDataModule",
+      "s1000d:dmc": "S1000DBIKE-AAA-D00-00-00-00AA-151A-A",
+      "rdfs:label": "Bicycle - Post-operation procedures (crew)",
+      "s1000d:dmType": "procedural",
+      "s1000d:snsCode": "D00",
+      "s1000d:hasTarget": {
+        "@id": "https://example.org/s1000d/entity/bicycle"
+      },
+      "s1000d:hasAction": {
+        "@id": "https://example.org/s1000d/action/post-operation-crew"
+      }
+    },
+    {
+      "@id": "https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-00-00AA-258A-A",
+      "@type": "s1000d:ProceduralDataModule",
+      "s1000d:dmc": "S1000DBIKE-AAA-D00-00-00-00AA-258A-A",
+      "rdfs:label": "Bicycle - Other procedures to clean",
+      "s1000d:dmType": "procedural",
+      "s1000d:snsCode": "D00",
+      "s1000d:hasTarget": {
+        "@id": "https://example.org/s1000d/entity/bicycle"
+      },
+      "s1000d:hasAction": {
+        "@id": "https://example.org/s1000d/action/clean"
+      },
+      "s1000d:alias": [
+        "청소",
+        "세척",
+        "clean"
+      ]
+    },
+    {
+      "@id": "https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-00-00AA-258B-A",
+      "@type": "s1000d:ProceduralDataModule",
+      "s1000d:dmc": "S1000DBIKE-AAA-D00-00-00-00AA-258B-A",
+      "rdfs:label": "Bicycle - Other procedures to clean",
+      "s1000d:dmType": "procedural",
+      "s1000d:snsCode": "D00",
+      "s1000d:hasTarget": {
+        "@id": "https://example.org/s1000d/entity/bicycle"
+      },
+      "s1000d:hasAction": {
+        "@id": "https://example.org/s1000d/action/clean"
+      },
+      "s1000d:alias": [
+        "청소",
+        "세척",
+        "clean"
+      ]
+    },
+    {
+      "@id": "https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-00-00AA-330A-A",
+      "@type": "s1000d:ProceduralDataModule",
+      "s1000d:dmc": "S1000DBIKE-AAA-D00-00-00-00AA-330A-A",
+      "rdfs:label": "Bicycle - Place on test stand",
+      "s1000d:dmType": "procedural",
+      "s1000d:snsCode": "D00",
+      "s1000d:hasTarget": {
+        "@id": "https://example.org/s1000d/entity/bicycle"
+      },
+      "s1000d:hasAction": {
+        "@id": "https://example.org/s1000d/action/place-on-test-stand"
+      }
+    },
+    {
+      "@id": "https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-00-00AA-663A-A",
+      "@type": "s1000d:ProceduralDataModule",
+      "s1000d:dmc": "S1000DBIKE-AAA-D00-00-00-00AA-663A-A",
+      "rdfs:label": "Bicycle - Standard repair procedures",
+      "s1000d:dmType": "procedural",
+      "s1000d:snsCode": "D00",
+      "s1000d:hasTarget": {
+        "@id": "https://example.org/s1000d/entity/bicycle"
+      },
+      "s1000d:hasAction": {
+        "@id": "https://example.org/s1000d/action/standard-repair"
+      }
+    },
+    {
+      "@id": "https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-01-00AA-341A-A",
+      "@type": "s1000d:ProceduralDataModule",
+      "s1000d:dmc": "S1000DBIKE-AAA-D00-00-01-00AA-341A-A",
+      "rdfs:label": "Fork - Manual test",
+      "s1000d:dmType": "procedural",
+      "s1000d:snsCode": "D00",
+      "s1000d:hasTarget": {
+        "@id": "https://example.org/s1000d/entity/fork"
+      },
+      "s1000d:hasAction": {
+        "@id": "https://example.org/s1000d/action/test"
+      },
+      "s1000d:alias": [
+        "점검",
+        "검사",
+        "시험",
+        "테스트",
+        "확인",
+        "test",
+        "check",
+        "inspection"
+      ]
+    },
+    {
+      "@id": "https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-01-00AA-520A-A",
+      "@type": "s1000d:ProceduralDataModule",
+      "s1000d:dmc": "S1000DBIKE-AAA-D00-00-01-00AA-520A-A",
+      "rdfs:label": "Fork - Remove procedures",
+      "s1000d:dmType": "procedural",
+      "s1000d:snsCode": "D00",
+      "s1000d:hasTarget": {
+        "@id": "https://example.org/s1000d/entity/fork"
+      },
+      "s1000d:hasAction": {
+        "@id": "https://example.org/s1000d/action/remove"
+      },
+      "s1000d:alias": [
+        "탈거",
+        "제거",
+        "분리",
+        "remove",
+        "removal"
+      ]
+    },
+    {
+      "@id": "https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-01-00AA-720A-A",
+      "@type": "s1000d:ProceduralDataModule",
+      "s1000d:dmc": "S1000DBIKE-AAA-D00-00-01-00AA-720A-A",
+      "rdfs:label": "Fork - Install procedures",
+      "s1000d:dmType": "procedural",
+      "s1000d:snsCode": "D00",
+      "s1000d:hasTarget": {
+        "@id": "https://example.org/s1000d/entity/fork"
+      },
+      "s1000d:hasAction": {
+        "@id": "https://example.org/s1000d/action/install"
+      },
+      "s1000d:alias": [
+        "설치",
+        "장착",
+        "조립",
+        "install",
+        "installation"
+      ]
+    },
+    {
+      "@id": "https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-01-00AA-93AA-A",
+      "@type": "s1000d:ProceduralDataModule",
+      "s1000d:dmc": "S1000DBIKE-AAA-D00-00-01-00AA-93AA-A",
+      "rdfs:label": "Bicycle axis - Modification procedures",
+      "s1000d:dmType": "procedural",
+      "s1000d:snsCode": "D00",
+      "s1000d:hasTarget": {
+        "@id": "https://example.org/s1000d/entity/bicycle-axis"
+      },
+      "s1000d:hasAction": {
+        "@id": "https://example.org/s1000d/action/modification"
+      }
+    },
+    {
+      "@id": "https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-01-00AB-720A-A",
+      "@type": "s1000d:ProceduralDataModule",
+      "s1000d:dmc": "S1000DBIKE-AAA-D00-00-01-00AB-720A-A",
+      "rdfs:label": "Fork - Install procedures",
+      "s1000d:dmType": "procedural",
+      "s1000d:snsCode": "D00",
+      "s1000d:hasTarget": {
+        "@id": "https://example.org/s1000d/entity/fork"
+      },
+      "s1000d:hasAction": {
+        "@id": "https://example.org/s1000d/action/install"
+      },
+      "s1000d:alias": [
+        "설치",
+        "장착",
+        "조립",
+        "install",
+        "installation"
+      ]
+    },
+    {
+      "@id": "https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-10-10-00AA-921A-A",
+      "@type": "s1000d:ProceduralDataModule",
+      "s1000d:dmc": "S1000DBIKE-AAA-DA0-10-10-00AA-921A-A",
+      "rdfs:label": "Inner tube - Remove and install a new item",
+      "s1000d:dmType": "procedural",
+      "s1000d:snsCode": "DA0",
+      "s1000d:hasTarget": {
+        "@id": "https://example.org/s1000d/entity/inner-tube"
+      },
+      "s1000d:hasAction": {
+        "@id": "https://example.org/s1000d/action/remove"
+      },
+      "s1000d:alias": [
+        "탈거",
+        "제거",
+        "분리",
+        "remove",
+        "removal"
+      ]
+    },
+    {
+      "@id": "https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-10-20-00AA-215A-A",
+      "@type": "s1000d:ProceduralDataModule",
+      "s1000d:dmc": "S1000DBIKE-AAA-DA0-10-20-00AA-215A-A",
+      "rdfs:label": "Tire - Fill with air",
+      "s1000d:dmType": "procedural",
+      "s1000d:snsCode": "DA0",
+      "s1000d:hasTarget": {
+        "@id": "https://example.org/s1000d/entity/tire"
+      },
+      "s1000d:hasAction": {
+        "@id": "https://example.org/s1000d/action/fill-air"
+      },
+      "s1000d:alias": [
+        "타이어",
+        "tire",
+        "tyre"
+      ]
+    },
+    {
+      "@id": "https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-10-20-00AA-362B-A",
+      "@type": "s1000d:ProceduralDataModule",
+      "s1000d:dmc": "S1000DBIKE-AAA-DA0-10-20-00AA-362B-A",
+      "rdfs:label": "Tire - Check pressure",
+      "s1000d:dmType": "procedural",
+      "s1000d:snsCode": "DA0",
+      "s1000d:hasTarget": {
+        "@id": "https://example.org/s1000d/entity/tire"
+      },
+      "s1000d:hasAction": {
+        "@id": "https://example.org/s1000d/action/check-pressure"
+      },
+      "s1000d:alias": [
+        "타이어",
+        "tire",
+        "tyre"
+      ]
+    },
+    {
+      "@id": "https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-10-20-00AA-921A-A",
+      "@type": "s1000d:ProceduralDataModule",
+      "s1000d:dmc": "S1000DBIKE-AAA-DA0-10-20-00AA-921A-A",
+      "rdfs:label": "Tire - Remove and install a new item",
+      "s1000d:dmType": "procedural",
+      "s1000d:snsCode": "DA0",
+      "s1000d:hasTarget": {
+        "@id": "https://example.org/s1000d/entity/tire"
+      },
+      "s1000d:hasAction": {
+        "@id": "https://example.org/s1000d/action/remove"
+      },
+      "s1000d:alias": [
+        "타이어",
+        "tire",
+        "tyre",
+        "탈거",
+        "제거",
+        "분리",
+        "remove",
+        "removal"
+      ]
+    },
+    {
+      "@id": "https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-20-00-00AA-412A-A",
+      "@type": "s1000d:FaultDataModule",
+      "s1000d:dmc": "S1000DBIKE-AAA-DA0-20-00-00AA-412A-A",
+      "rdfs:label": "Rear wheel - Detected fault",
+      "s1000d:dmType": "fault",
+      "s1000d:snsCode": "DA0",
+      "s1000d:hasTarget": {
+        "@id": "https://example.org/s1000d/entity/rear-wheel"
+      },
+      "s1000d:hasAction": {
+        "@id": "https://example.org/s1000d/action/fault"
+      },
+      "s1000d:alias": [
+        "뒷바퀴",
+        "후륜",
+        "rear wheel"
+      ]
+    },
+    {
+      "@id": "https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-20-00-00AA-520A-A",
+      "@type": "s1000d:ProceduralDataModule",
+      "s1000d:dmc": "S1000DBIKE-AAA-DA0-20-00-00AA-520A-A",
+      "rdfs:label": "Rear wheel - Remove procedures",
+      "s1000d:dmType": "procedural",
+      "s1000d:snsCode": "DA0",
+      "s1000d:hasTarget": {
+        "@id": "https://example.org/s1000d/entity/rear-wheel"
+      },
+      "s1000d:hasAction": {
+        "@id": "https://example.org/s1000d/action/remove"
+      },
+      "s1000d:alias": [
+        "뒷바퀴",
+        "후륜",
+        "rear wheel",
+        "탈거",
+        "제거",
+        "분리",
+        "remove",
+        "removal"
+      ]
+    },
+    {
+      "@id": "https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-30-00-00AA-520A-A",
+      "@type": "s1000d:ProceduralDataModule",
+      "s1000d:dmc": "S1000DBIKE-AAA-DA0-30-00-00AA-520A-A",
+      "rdfs:label": "Front wheel - Remove procedures",
+      "s1000d:dmType": "procedural",
+      "s1000d:snsCode": "DA0",
+      "s1000d:hasTarget": {
+        "@id": "https://example.org/s1000d/entity/front-wheel"
+      },
+      "s1000d:hasAction": {
+        "@id": "https://example.org/s1000d/action/remove"
+      },
+      "s1000d:alias": [
+        "앞바퀴",
+        "전륜",
+        "프론트 휠",
+        "front wheel",
+        "탈거",
+        "제거",
+        "분리",
+        "remove",
+        "removal"
+      ]
+    },
+    {
+      "@id": "https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-30-00-00AA-720A-A",
+      "@type": "s1000d:ProceduralDataModule",
+      "s1000d:dmc": "S1000DBIKE-AAA-DA0-30-00-00AA-720A-A",
+      "rdfs:label": "Front wheel - Install procedures",
+      "s1000d:dmType": "procedural",
+      "s1000d:snsCode": "DA0",
+      "s1000d:hasTarget": {
+        "@id": "https://example.org/s1000d/entity/front-wheel"
+      },
+      "s1000d:hasAction": {
+        "@id": "https://example.org/s1000d/action/install"
+      },
+      "s1000d:alias": [
+        "앞바퀴",
+        "전륜",
+        "프론트 휠",
+        "front wheel",
+        "설치",
+        "장착",
+        "조립",
+        "install",
+        "installation"
+      ]
+    },
+    {
+      "@id": "https://example.org/s1000d/dm/S1000DBIKE-AAA-DA1-00-00-00AA-041A-A",
+      "@type": "s1000d:DescriptiveDataModule",
+      "s1000d:dmc": "S1000DBIKE-AAA-DA1-00-00-00AA-041A-A",
+      "rdfs:label": "Brake system - Description",
+      "s1000d:dmType": "descriptive",
+      "s1000d:snsCode": "DA1",
+      "s1000d:describes": {
+        "@id": "https://example.org/s1000d/entity/brake-system"
+      },
+      "s1000d:alias": [
+        "브레이크",
+        "브레이크 시스템",
+        "brake system"
+      ],
+      "s1000d:hasComponent": [
+        {
+          "@id": "https://example.org/s1000d/entity/%EB%B8%8C%EB%A0%88%EC%9D%B4%ED%81%AC-%EB%A0%88%EB%B2%84"
+        },
+        {
+          "@id": "https://example.org/s1000d/entity/%EB%B8%8C%EB%A0%88%EC%9D%B4%ED%81%AC-%EC%BC%80%EC%9D%B4%EB%B8%94"
+        },
+        {
+          "@id": "https://example.org/s1000d/entity/%EB%B8%8C%EB%A0%88%EC%9D%B4%ED%81%AC-%EC%95%94"
+        },
+        {
+          "@id": "https://example.org/s1000d/entity/%EB%B8%8C%EB%A0%88%EC%9D%B4%ED%81%AC-%ED%8C%A8%EB%93%9C"
+        }
+      ]
+    },
+    {
+      "@id": "https://example.org/s1000d/dm/S1000DBIKE-AAA-DA1-00-00-00AA-341A-A",
+      "@type": "s1000d:ProceduralDataModule",
+      "s1000d:dmc": "S1000DBIKE-AAA-DA1-00-00-00AA-341A-A",
+      "rdfs:label": "Brake system - Manual test",
+      "s1000d:dmType": "procedural",
+      "s1000d:snsCode": "DA1",
+      "s1000d:hasTarget": {
+        "@id": "https://example.org/s1000d/entity/brake-system"
+      },
+      "s1000d:hasAction": {
+        "@id": "https://example.org/s1000d/action/test"
+      },
+      "s1000d:alias": [
+        "브레이크 시스템",
+        "브레이크",
+        "brake system",
+        "brake",
+        "점검",
+        "검사",
+        "시험",
+        "테스트",
+        "확인",
+        "test",
+        "check",
+        "inspection"
+      ]
+    },
+    {
+      "@id": "https://example.org/s1000d/dm/S1000DBIKE-AAA-DA1-10-00-00AA-251A-A",
+      "@type": "s1000d:ProceduralDataModule",
+      "s1000d:dmc": "S1000DBIKE-AAA-DA1-10-00-00AA-251A-A",
+      "rdfs:label": "Brake pads - Clean with rubbing alcohol",
+      "s1000d:dmType": "procedural",
+      "s1000d:snsCode": "DA1",
+      "s1000d:hasTarget": {
+        "@id": "https://example.org/s1000d/entity/brake-pad"
+      },
+      "s1000d:hasAction": {
+        "@id": "https://example.org/s1000d/action/clean"
+      },
+      "s1000d:alias": [
+        "브레이크 패드",
+        "브레이크패드",
+        "brake pad",
+        "brake pads",
+        "청소",
+        "세척",
+        "clean"
+      ]
+    },
+    {
+      "@id": "https://example.org/s1000d/dm/S1000DBIKE-AAA-DA1-20-00-00AA-520A-A",
+      "@type": "s1000d:ProceduralDataModule",
+      "s1000d:dmc": "S1000DBIKE-AAA-DA1-20-00-00AA-520A-A",
+      "rdfs:label": "Front brake - Remove procedures",
+      "s1000d:dmType": "procedural",
+      "s1000d:snsCode": "DA1",
+      "s1000d:hasTarget": {
+        "@id": "https://example.org/s1000d/entity/front-brake"
+      },
+      "s1000d:hasAction": {
+        "@id": "https://example.org/s1000d/action/remove"
+      },
+      "s1000d:alias": [
+        "탈거",
+        "제거",
+        "분리",
+        "remove",
+        "removal"
+      ]
+    },
+    {
+      "@id": "https://example.org/s1000d/dm/S1000DBIKE-AAA-DA1-20-00-00AA-720A-A",
+      "@type": "s1000d:ProceduralDataModule",
+      "s1000d:dmc": "S1000DBIKE-AAA-DA1-20-00-00AA-720A-A",
+      "rdfs:label": "Front brake - Install procedures",
+      "s1000d:dmType": "procedural",
+      "s1000d:snsCode": "DA1",
+      "s1000d:hasTarget": {
+        "@id": "https://example.org/s1000d/entity/front-brake"
+      },
+      "s1000d:hasAction": {
+        "@id": "https://example.org/s1000d/action/install"
+      },
+      "s1000d:alias": [
+        "설치",
+        "장착",
+        "조립",
+        "install",
+        "installation"
+      ]
+    },
+    {
+      "@id": "https://example.org/s1000d/dm/S1000DBIKE-AAA-DA2-10-00-00AA-520A-A",
+      "@type": "s1000d:ProceduralDataModule",
+      "s1000d:dmc": "S1000DBIKE-AAA-DA2-10-00-00AA-520A-A",
+      "rdfs:label": "Stem - Remove procedures",
+      "s1000d:dmType": "procedural",
+      "s1000d:snsCode": "DA2",
+      "s1000d:hasTarget": {
+        "@id": "https://example.org/s1000d/entity/stem"
+      },
+      "s1000d:hasAction": {
+        "@id": "https://example.org/s1000d/action/remove"
+      },
+      "s1000d:alias": [
+        "스템",
+        "stem",
+        "탈거",
+        "제거",
+        "분리",
+        "remove",
+        "removal"
+      ]
+    },
+    {
+      "@id": "https://example.org/s1000d/dm/S1000DBIKE-AAA-DA2-10-00-00AA-720A-A",
+      "@type": "s1000d:ProceduralDataModule",
+      "s1000d:dmc": "S1000DBIKE-AAA-DA2-10-00-00AA-720A-A",
+      "rdfs:label": "Stem - Install procedures",
+      "s1000d:dmType": "procedural",
+      "s1000d:snsCode": "DA2",
+      "s1000d:hasTarget": {
+        "@id": "https://example.org/s1000d/entity/stem"
+      },
+      "s1000d:hasAction": {
+        "@id": "https://example.org/s1000d/action/install"
+      },
+      "s1000d:alias": [
+        "스템",
+        "stem",
+        "설치",
+        "장착",
+        "조립",
+        "install",
+        "installation"
+      ]
+    },
+    {
+      "@id": "https://example.org/s1000d/dm/S1000DBIKE-AAA-DA2-20-00-00AA-520A-A",
+      "@type": "s1000d:ProceduralDataModule",
+      "s1000d:dmc": "S1000DBIKE-AAA-DA2-20-00-00AA-520A-A",
+      "rdfs:label": "Handlebar - Remove procedures",
+      "s1000d:dmType": "procedural",
+      "s1000d:snsCode": "DA2",
+      "s1000d:hasTarget": {
+        "@id": "https://example.org/s1000d/entity/handlebar"
+      },
+      "s1000d:hasAction": {
+        "@id": "https://example.org/s1000d/action/remove"
+      },
+      "s1000d:alias": [
+        "핸들바",
+        "핸들 바",
+        "handlebar",
+        "탈거",
+        "제거",
+        "분리",
+        "remove",
+        "removal"
+      ]
+    },
+    {
+      "@id": "https://example.org/s1000d/dm/S1000DBIKE-AAA-DA2-20-00-00AA-720A-A",
+      "@type": "s1000d:ProceduralDataModule",
+      "s1000d:dmc": "S1000DBIKE-AAA-DA2-20-00-00AA-720A-A",
+      "rdfs:label": "Handlebar - Install procedures",
+      "s1000d:dmType": "procedural",
+      "s1000d:snsCode": "DA2",
+      "s1000d:hasTarget": {
+        "@id": "https://example.org/s1000d/entity/handlebar"
+      },
+      "s1000d:hasAction": {
+        "@id": "https://example.org/s1000d/action/install"
+      },
+      "s1000d:alias": [
+        "핸들바",
+        "핸들 바",
+        "handlebar",
+        "설치",
+        "장착",
+        "조립",
+        "install",
+        "installation"
+      ]
+    },
+    {
+      "@id": "https://example.org/s1000d/dm/S1000DBIKE-AAA-DA2-30-00-00AA-520A-A",
+      "@type": "s1000d:ProceduralDataModule",
+      "s1000d:dmc": "S1000DBIKE-AAA-DA2-30-00-00AA-520A-A",
+      "rdfs:label": "Headset - Remove procedures",
+      "s1000d:dmType": "procedural",
+      "s1000d:snsCode": "DA2",
+      "s1000d:hasTarget": {
+        "@id": "https://example.org/s1000d/entity/headset"
+      },
+      "s1000d:hasAction": {
+        "@id": "https://example.org/s1000d/action/remove"
+      },
+      "s1000d:alias": [
+        "탈거",
+        "제거",
+        "분리",
+        "remove",
+        "removal"
+      ]
+    },
+    {
+      "@id": "https://example.org/s1000d/dm/S1000DBIKE-AAA-DA2-30-00-00AA-720A-A",
+      "@type": "s1000d:ProceduralDataModule",
+      "s1000d:dmc": "S1000DBIKE-AAA-DA2-30-00-00AA-720A-A",
+      "rdfs:label": "Headset - Install procedures",
+      "s1000d:dmType": "procedural",
+      "s1000d:snsCode": "DA2",
+      "s1000d:hasTarget": {
+        "@id": "https://example.org/s1000d/entity/headset"
+      },
+      "s1000d:hasAction": {
+        "@id": "https://example.org/s1000d/action/install"
+      },
+      "s1000d:alias": [
+        "설치",
+        "장착",
+        "조립",
+        "install",
+        "installation"
+      ]
+    },
+    {
+      "@id": "https://example.org/s1000d/dm/S1000DBIKE-AAA-DA2-40-00-00AA-720A-A",
+      "@type": "s1000d:ProceduralDataModule",
+      "s1000d:dmc": "S1000DBIKE-AAA-DA2-40-00-00AA-720A-A",
+      "rdfs:label": "Spacer - Install procedures",
+      "s1000d:dmType": "procedural",
+      "s1000d:snsCode": "DA2",
+      "s1000d:hasTarget": {
+        "@id": "https://example.org/s1000d/entity/spacer"
+      },
+      "s1000d:hasAction": {
+        "@id": "https://example.org/s1000d/action/install"
+      },
+      "s1000d:alias": [
+        "설치",
+        "장착",
+        "조립",
+        "install",
+        "installation"
+      ]
+    },
+    {
+      "@id": "https://example.org/s1000d/dm/S1000DBIKE-AAA-DA3-10-00-00AA-921A-A",
+      "@type": "s1000d:ProceduralDataModule",
+      "s1000d:dmc": "S1000DBIKE-AAA-DA3-10-00-00AA-921A-A",
+      "rdfs:label": "Horn - Remove and install a new item",
+      "s1000d:dmType": "procedural",
+      "s1000d:snsCode": "DA3",
+      "s1000d:hasTarget": {
+        "@id": "https://example.org/s1000d/entity/horn"
+      },
+      "s1000d:hasAction": {
+        "@id": "https://example.org/s1000d/action/remove"
+      },
+      "s1000d:alias": [
+        "탈거",
+        "제거",
+        "분리",
+        "remove",
+        "removal"
+      ]
+    },
+    {
+      "@id": "https://example.org/s1000d/dm/S1000DBIKE-AAA-DA4-10-00-00AA-241A-A",
+      "@type": "s1000d:ProceduralDataModule",
+      "s1000d:dmc": "S1000DBIKE-AAA-DA4-10-00-00AA-241A-A",
+      "rdfs:label": "Chain - Oil",
+      "s1000d:dmType": "procedural",
+      "s1000d:snsCode": "DA4",
+      "s1000d:hasTarget": {
+        "@id": "https://example.org/s1000d/entity/chain"
+      },
+      "s1000d:hasAction": {
+        "@id": "https://example.org/s1000d/action/oil"
+      },
+      "s1000d:alias": [
+        "체인",
+        "chain",
+        "오일",
+        "윤활",
+        "기름",
+        "바르는",
+        "oil",
+        "lubricate"
+      ]
+    },
+    {
+      "@id": "https://example.org/s1000d/dm/S1000DBIKE-AAA-DA4-10-00-00AA-251B-A",
+      "@type": "s1000d:ProceduralDataModule",
+      "s1000d:dmc": "S1000DBIKE-AAA-DA4-10-00-00AA-251B-A",
+      "rdfs:label": "Chain - Clean with chemical agent",
+      "s1000d:dmType": "procedural",
+      "s1000d:snsCode": "DA4",
+      "s1000d:hasTarget": {
+        "@id": "https://example.org/s1000d/entity/chain"
+      },
+      "s1000d:hasAction": {
+        "@id": "https://example.org/s1000d/action/clean"
+      },
+      "s1000d:alias": [
+        "체인",
+        "chain",
+        "청소",
+        "세척",
+        "clean"
+      ]
+    },
+    {
+      "@id": "https://example.org/s1000d/dm/S1000DBIKE-AAA-DA4-10-00-00AA-414A-A",
+      "@type": "s1000d:FaultDataModule",
+      "s1000d:dmc": "S1000DBIKE-AAA-DA4-10-00-00AA-414A-A",
+      "rdfs:label": "Drive train - Correlated fault",
+      "s1000d:dmType": "fault",
+      "s1000d:snsCode": "DA4",
+      "s1000d:hasTarget": {
+        "@id": "https://example.org/s1000d/entity/drive-train"
+      },
+      "s1000d:hasAction": {
+        "@id": "https://example.org/s1000d/action/fault"
+      }
+    },
+    {
+      "@id": "https://example.org/s1000d/dm/S1000DBIKE-AAA-DA5-20-00-00AA-251C-A",
+      "@type": "s1000d:ProceduralDataModule",
+      "s1000d:dmc": "S1000DBIKE-AAA-DA5-20-00-00AA-251C-A",
+      "rdfs:label": "Hubs - Clean with chemical agent",
+      "s1000d:dmType": "procedural",
+      "s1000d:snsCode": "DA5",
+      "s1000d:hasTarget": {
+        "@id": "https://example.org/s1000d/entity/hubs"
+      },
+      "s1000d:hasAction": {
+        "@id": "https://example.org/s1000d/action/clean"
+      },
+      "s1000d:alias": [
+        "청소",
+        "세척",
+        "clean"
+      ]
+    },
+    {
+      "@id": "https://example.org/s1000d/dm/S1000DLIGHTING-AAA-D00-00-00-00AA-341A-A",
+      "@type": "s1000d:ProceduralDataModule",
+      "s1000d:dmc": "S1000DLIGHTING-AAA-D00-00-00-00AA-341A-A",
+      "rdfs:label": "Lights - Manual test",
+      "s1000d:dmType": "procedural",
+      "s1000d:snsCode": "D00",
+      "s1000d:hasTarget": {
+        "@id": "https://example.org/s1000d/entity/lights"
+      },
+      "s1000d:hasAction": {
+        "@id": "https://example.org/s1000d/action/test"
+      },
+      "s1000d:alias": [
+        "조명 시스템",
+        "조명",
+        "라이트",
+        "등화",
+        "lights",
+        "lighting",
+        "점검",
+        "검사",
+        "시험",
+        "테스트",
+        "확인",
+        "test",
+        "check",
+        "inspection"
+      ]
+    },
+    {
+      "@id": "https://example.org/s1000d/dm/S1000DLIGHTING-AAA-D00-00-00-00AA-413A-A",
+      "@type": "s1000d:FaultDataModule",
+      "s1000d:dmc": "S1000DLIGHTING-AAA-D00-00-00-00AA-413A-A",
+      "rdfs:label": "Lights - Observed fault",
+      "s1000d:dmType": "fault",
+      "s1000d:snsCode": "D00",
+      "s1000d:hasTarget": {
+        "@id": "https://example.org/s1000d/entity/lights"
+      },
+      "s1000d:hasAction": {
+        "@id": "https://example.org/s1000d/action/fault"
+      },
+      "s1000d:alias": [
+        "조명 시스템",
+        "조명",
+        "라이트",
+        "등화",
+        "lights",
+        "lighting"
+      ]
+    },
+    {
+      "@id": "https://example.org/s1000d/dm/S1000DLIGHTING-AAA-D00-00-00-00AA-700A-A",
+      "@type": "s1000d:ProceduralDataModule",
+      "s1000d:dmc": "S1000DLIGHTING-AAA-D00-00-00-00AA-700A-A",
+      "rdfs:label": "Lighting - Assemble, install and connect procedures",
+      "s1000d:dmType": "procedural",
+      "s1000d:snsCode": "D00",
+      "s1000d:hasTarget": {
+        "@id": "https://example.org/s1000d/entity/lights"
+      },
+      "s1000d:hasAction": {
+        "@id": "https://example.org/s1000d/action/install"
+      },
+      "s1000d:alias": [
+        "조명 시스템",
+        "조명",
+        "라이트",
+        "등화",
+        "lights",
+        "lighting",
+        "설치",
+        "장착",
+        "조립",
+        "install",
+        "installation"
+      ]
+    },
+    {
+      "@id": "https://example.org/s1000d/dm/S1000DLIGHTING-AAA-D00-00-00-00AA-921A-A",
+      "@type": "s1000d:ProceduralDataModule",
+      "s1000d:dmc": "S1000DLIGHTING-AAA-D00-00-00-00AA-921A-A",
+      "rdfs:label": "Lighting - Remove and install a new item",
+      "s1000d:dmType": "procedural",
+      "s1000d:snsCode": "D00",
+      "s1000d:hasTarget": {
+        "@id": "https://example.org/s1000d/entity/lights"
+      },
+      "s1000d:hasAction": {
+        "@id": "https://example.org/s1000d/action/remove"
+      },
+      "s1000d:alias": [
+        "조명 시스템",
+        "조명",
+        "라이트",
+        "등화",
+        "lights",
+        "lighting",
+        "탈거",
+        "제거",
+        "분리",
+        "remove",
+        "removal"
+      ]
+    }
+  ]
+}

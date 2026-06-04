@@ -19,6 +19,7 @@ def verbalize_answer_plan(plan: AnswerPlan, llm: Any | None = None) -> str:
 
 def build_verbalizer_prompt(plan: AnswerPlan) -> str:
     claims = "\n".join(f"- {claim.text} [DMC: {', '.join(claim.evidence_dmcs)}]" for claim in plan.claims)
+    graph_paths = "\n".join(f"- {path}" for path in plan.graph_paths)
     return f"""당신은 S1000D 정비문서 기반 한국어 AI 정비지원 챗봇입니다.
 
 반드시 아래 구조화된 AnswerPlan만 사용해서 답변하세요.
@@ -34,6 +35,9 @@ def build_verbalizer_prompt(plan: AnswerPlan) -> str:
 허용된 claims:
 {claims or '- 없음'}
 
+RDF graph paths:
+{graph_paths or '- 없음'}
+
 required citations: {', '.join(plan.required_citations) or '없음'}
 forbidden claims: {', '.join(plan.forbidden_claims)}
 """
@@ -45,6 +49,9 @@ def _deterministic_fallback(plan: AnswerPlan) -> str:
         lines.append(f"\n[{section}]")
         for claim in plan.claims:
             lines.append(f"- {claim.text}")
+    if plan.graph_paths:
+        lines.append("\n[온톨로지 선택 근거]")
+        lines.extend(f"- {path}" for path in plan.graph_paths)
     if plan.required_citations:
         lines.append("\n근거 DMC: " + ", ".join(plan.required_citations))
     return "\n".join(lines).strip()

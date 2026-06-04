@@ -4,7 +4,7 @@ from src.rag.ontology import DetailLevel, Intent, ParsedQuery
 from src.rag.v4.answer_plan import AnswerClaim, AnswerPlan, build_answer_plan
 from src.rag.v4.graph_schema import GraphEdge, GraphNode, NodeType, RelationType
 from src.rag.v4.rdf_resolver import RdfResolution
-from src.rag.v4.verbalizer import verbalize_answer_plan
+from src.rag.v4.verbalizer import build_verbalizer_prompt, verbalize_answer_plan
 
 
 def test_v4_graph_schema_models_s1000d_relationships():
@@ -59,6 +59,35 @@ def test_v4_answer_plan_includes_rdf_primary_and_related_citations():
     plan = build_answer_plan(parsed, docs, rdf_resolution=rdf_resolution)
 
     assert plan.required_citations == ("BRAKE-PAD-CLEAN", "BRAKE-DESC")
+
+
+def test_v4_answer_plan_includes_rdf_graph_paths_for_explainability():
+    parsed = ParsedQuery(
+        original="브레이크 패드 청소 절차 알려줘",
+        normalized="브레이크 패드 청소 절차 알려줘",
+        intent=Intent.PROCEDURE,
+        target="brake pad",
+        action="clean",
+    )
+    docs = [Document(page_content="Clean brake pad with approved material.", metadata={"dmc": "BRAKE-PAD-CLEAN"})]
+    rdf_resolution = RdfResolution(
+        primary_dmcs=("BRAKE-PAD-CLEAN",),
+        related_dmcs=("BRAKE-DESC",),
+        graph_paths=(
+            "BRAKE-PAD-CLEAN -[s1000d:hasTarget]-> brake pad",
+            "BRAKE-DESC -[s1000d:describes]-> brake system",
+        ),
+    )
+
+    plan = build_answer_plan(parsed, docs, rdf_resolution=rdf_resolution)
+    prompt = build_verbalizer_prompt(plan)
+    fallback = verbalize_answer_plan(plan)
+
+    assert plan.graph_paths == rdf_resolution.graph_paths
+    assert "RDF graph paths" in prompt
+    assert "BRAKE-PAD-CLEAN -[s1000d:hasTarget]-> brake pad" in prompt
+    assert "[온톨로지 선택 근거]" in fallback
+    assert "BRAKE-DESC -[s1000d:describes]-> brake system" in fallback
 
 
 def test_v4_verbalizer_uses_llm_for_synthesis_but_keeps_grounding_contract():

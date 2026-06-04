@@ -8,11 +8,15 @@ and tests stable while the optional backend is introduced.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Iterable
+import json
+from typing import Callable, Iterable
+from urllib import request
 
 from src.rag.ontology import Intent, OntologyNode, ParsedQuery
 
 from .rdf_exporter import BASE_IRI, Triple, action_uri, dm_uri, entity_uri, ontology_nodes_to_triples
+
+SparqlQueryFn = Callable[[str], dict]
 
 
 @dataclass(frozen=True)
@@ -113,6 +117,98 @@ class RdfOntologyStore:
                 if subject == dm and obj.startswith(f"<{BASE_IRI}/entity/"):
                     paths.append(f"{target_ref} <- {pred} <- {dm}")
         return tuple(dict.fromkeys(paths))
+
+
+class SparqlEndpointOntologyStore:
+    """SPARQL/GraphDB-compatible ontology store.
+
+    The store uses SPARQL JSON results and keeps the same public resolver
+    contract as RdfOntologyStore.  Tests can inject query_fn; production uses a
+    minimal urllib POST client without adding a mandatory RDF dependency.
+    """
+
+    def __init__(self, endpoint: str, query_fn: SparqlQueryFn | None = None):
+        self.endpoint = endpoint
+        self._query_fn = query_fn or self._query_endpoint
+
+    def find_descriptive_dmcs(self, target: str) -> tuple[str, ...]:
+        query = _select_dmc_query(f"?dm s1000d:describes {entity_uri(target)} .")
+        return _dmcs_from_sparql_json(self._query_fn(query))
+
+    def find_procedure_dmcs(self, target: str, action: str | None = None) -> tuple[str, ...]:
+        clauses = [f"?dm s1000d:hasTarget {entity_uri(target)} ."]
+        if action:
+            clauses.append(f"?dm s1000d:hasAction {action_uri(action)} .")
+        query = _select_dmc_query("\n  ".join(clauses))
+        return _dmcs_from_sparql_json(self._query_fn(query))
+
+    def related_dmcs_for_target(self, target: str | None) -> tuple[str, ...]:
+        if not target:
+            return ()
+        family = _family(target) or target
+        entities = [entity_uri(family)]
+        if entity_uri(target) not in entities:
+            entities.append(entity_uri(target))
+        related: list[str] = []
+        for entity in entities:
+            query = _select_dmc_query(
+                f"{{ ?dm s1000d:describes {entity} . }} UNION {{ ?dm s1000d:hasTarget {entity} . }}"
+            )
+            related.extend(_dmcs_from_sparql_json(self._query_fn(query)))
+        return tuple(dict.fromkeys(related))
+
+    def resolve_query(self, parsed: ParsedQuery) -> RdfResolution:
+        primary: tuple[str, ...] = ()
+        if parsed.referenced_dmcs:
+            primary = parsed.referenced_dmcs
+        elif parsed.intent == Intent.PROCEDURE and parsed.target:
+            primary = self.find_procedure_dmcs(parsed.target, parsed.action)
+        elif parsed.intent in {Intent.DESCRIBE, Intent.LIST_COMPONENTS, Intent.DOCUMENT_SUMMARY} and parsed.target:
+            primary = self.find_descriptive_dmcs(parsed.target)
+        elif parsed.target:
+            primary = self.related_dmcs_for_target(parsed.target)
+
+        related = tuple(dmc for dmc in self.related_dmcs_for_target(parsed.target) if dmc not in primary)
+        paths = tuple(f"SPARQL endpoint {self.endpoint} selected {dmc}" for dmc in (*primary, *related))
+        return RdfResolution(primary_dmcs=primary, related_dmcs=related, graph_paths=paths)
+
+    def _query_endpoint(self, query: str) -> dict:
+        payload = query.encode("utf-8")
+        req = request.Request(
+            self.endpoint,
+            data=payload,
+            headers={
+                "Accept": "application/sparql-results+json",
+                "Content-Type": "application/sparql-query; charset=utf-8",
+            },
+            method="POST",
+        )
+        with request.urlopen(req, timeout=10) as response:  # nosec B310 - configured local/private endpoint
+            return json.loads(response.read().decode("utf-8"))
+
+
+def build_rdf_ontology_store(
+    nodes: Iterable[OntologyNode], sparql_endpoint: str | None = None
+) -> RdfOntologyStore | SparqlEndpointOntologyStore:
+    if sparql_endpoint:
+        return SparqlEndpointOntologyStore(endpoint=sparql_endpoint)
+    return RdfOntologyStore.from_nodes(nodes)
+
+
+def _select_dmc_query(where_clause: str) -> str:
+    return f"""PREFIX s1000d: <{BASE_IRI}/>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+SELECT DISTINCT ?dmc WHERE {{
+  {where_clause}
+  ?dm s1000d:dmc ?dmc .
+}}"""
+
+
+def _dmcs_from_sparql_json(payload: dict) -> tuple[str, ...]:
+    bindings = payload.get("results", {}).get("bindings", [])
+    dmcs = [str(row.get("dmc", {}).get("value", "")) for row in bindings]
+    return tuple(dict.fromkeys(dmc for dmc in dmcs if dmc))
 
 
 def _family(target: str | None) -> str | None:
