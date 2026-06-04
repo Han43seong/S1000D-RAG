@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from typing import Any
+import re
 
 from .answer_plan import AnswerPlan
 
@@ -11,7 +12,7 @@ def verbalize_answer_plan(plan: AnswerPlan, llm: Any | None = None) -> str:
     if llm is not None:
         response = llm.invoke(prompt)
         text = getattr(response, "content", response)
-        answer = str(text).strip()
+        answer = _clean_llm_answer(str(text).strip())
         if answer:
             return _ensure_citations(answer, plan.required_citations)
     return _deterministic_fallback(plan)
@@ -25,6 +26,9 @@ def build_verbalizer_prompt(plan: AnswerPlan) -> str:
 반드시 아래 구조화된 AnswerPlan만 사용해서 답변하세요.
 근거 없는 사실, 절차, 공구, 안전 경고를 만들지 마세요.
 답변에는 required citations의 DMC를 포함하세요.
+AnswerPlan을 재출력하지 마세요.
+[DMC: ...; support: ...; titles: ...] 같은 내부 metadata bracket을 답변 본문에 쓰지 마세요.
+최종 답변만 한국어로 작성하세요.
 
 질문: {plan.query}
 의도: {plan.intent.value}
@@ -81,6 +85,23 @@ def _deterministic_fallback(plan: AnswerPlan) -> str:
     if plan.required_citations:
         lines.append("\n근거 DMC: " + ", ".join(plan.required_citations))
     return "\n".join(lines).strip()
+
+
+def _clean_llm_answer(answer: str) -> str:
+    if not answer:
+        return ""
+    # Some local LLMs echo the prompt contract as `AnswerPlan: ... Answer: ...`.
+    if "Answer:" in answer:
+        answer = answer.rsplit("Answer:", 1)[-1]
+    answer = re.sub(r"^\s*AnswerPlan\s*[:：]\s*", "", answer).strip()
+    answer = re.sub(r"^\s*AnswerPlan에 따라[,，]?\s*", "", answer).strip()
+    answer = re.sub(r"\[(?:DMC|support|titles|blocks|source)[^\]]*\]", "", answer, flags=re.IGNORECASE).strip()
+    answer = re.sub(r"\[\s*근거 기반 설명\s*\]", "", answer).strip()
+    answer = re.sub(r"\[DMC:[^\[]*(?=\[근거 기반 설명\]|근거 DMC:|$)", "", answer, flags=re.IGNORECASE).strip()
+    answer = re.split(r"\n\s*\]\s*\n|\n\s*Okay[,\s]|\n\s*Let me\b", answer, maxsplit=1, flags=re.IGNORECASE)[0].strip()
+    leaked_markers = ("required citations", "forbidden claims", "허용된 claims", "RDF graph paths")
+    cleaned_lines = [line for line in answer.splitlines() if not any(marker in line for marker in leaked_markers)]
+    return "\n".join(line.strip() for line in cleaned_lines if line.strip()).strip()
 
 
 def _ensure_citations(answer: str, citations: tuple[str, ...]) -> str:

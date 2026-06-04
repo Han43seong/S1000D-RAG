@@ -165,6 +165,8 @@ def test_v4_answer_plan_includes_rdf_graph_paths_for_explainability():
     assert plan.graph_paths == rdf_resolution.graph_paths
     assert "RDF graph paths" in prompt
     assert "BRAKE-PAD-CLEAN -[s1000d:hasTarget]-> brake pad" in prompt
+    assert "AnswerPlan을 재출력하지 마세요" in prompt
+    assert "최종 답변만 한국어로 작성하세요" in prompt
     assert "[온톨로지 선택 근거]" in fallback
     assert "BRAKE-DESC -[s1000d:describes]-> brake system" in fallback
 
@@ -195,3 +197,101 @@ def test_v4_verbalizer_uses_llm_for_synthesis_but_keeps_grounding_contract():
     answer = verbalize_answer_plan(plan, llm=FakeLLM())
 
     assert "근거 DMC: BRAKE-AAA-DA1-00-00-00AA-041A-A" in answer
+
+
+def test_v4_verbalizer_strips_prompt_contract_leakage_from_llm_output():
+    plan = AnswerPlan(
+        query="앞바퀴 설치 절차 알려줘",
+        intent=Intent.PROCEDURE,
+        detail_level=DetailLevel.NORMAL,
+        audience="technician",
+        claims=(
+            AnswerClaim(
+                text="앞바퀴를 설치하기 전에 포크와 브레이크를 먼저 설치해야 합니다.",
+                evidence_dmcs=("S1000DBIKE-AAA-DA0-30-00-00AA-720A-A",),
+                source_titles=("Front wheel - Install procedures",),
+            ),
+        ),
+        required_citations=("S1000DBIKE-AAA-DA0-30-00-00AA-720A-A",),
+        forbidden_claims=("fabricated step sequence",),
+        sections=("절차",),
+    )
+
+    class LeakyLLM:
+        def invoke(self, _prompt):
+            return (
+                "AnswerPlan:[근거 기반 설명] It is necessary to install the fork and the brakes before installing the wheel. "
+                "[DMC: S1000DBIKE-AAA-DA0-30-00-00AA-720A-A; support: exact; titles: Front wheel - Install procedures]"
+                "Answer:AnswerPlan에 따라, 앞바퀴 설치 절차는 다음과 같습니다: 포크와 브레이크를 먼저 설치하세요."
+            )
+
+    answer = verbalize_answer_plan(plan, llm=LeakyLLM())
+
+    assert answer.startswith("앞바퀴 설치 절차는 다음과 같습니다")
+    assert "AnswerPlan" not in answer
+    assert "Answer:" not in answer
+    assert "required citations" not in answer
+    assert "forbidden claims" not in answer
+    assert "titles:" not in answer
+    assert "근거 DMC: S1000DBIKE-AAA-DA0-30-00-00AA-720A-A" in answer
+
+
+def test_v4_verbalizer_strips_claim_labels_and_inline_metadata_from_llm_output():
+    plan = AnswerPlan(
+        query="앞바퀴 설치 절차 알려줘",
+        intent=Intent.PROCEDURE,
+        detail_level=DetailLevel.NORMAL,
+        audience="technician",
+        claims=(
+            AnswerClaim(
+                text="앞바퀴를 설치하기 전에 포크와 브레이크를 먼저 설치해야 합니다.",
+                evidence_dmcs=("S1000DBIKE-AAA-DA0-30-00-00AA-720A-A",),
+            ),
+        ),
+        required_citations=("S1000DBIKE-AAA-DA0-30-00-00AA-720A-A",),
+        forbidden_claims=("fabricated step sequence",),
+        sections=("절차",),
+    )
+
+    class MetadataEchoLLM:
+        def invoke(self, _prompt):
+            return (
+                "[근거 기반 설명] It is necessary to install the fork and the brakes before installing the wheel. "
+                "[DMC: S1000DBIKE-AAA-DA0-30-00-00AA-720A-A; support: exact; titles: Front wheel - Install procedures] "
+                "[근거 기반 설명] Put the bike on the floor."
+            )
+
+    answer = verbalize_answer_plan(plan, llm=MetadataEchoLLM())
+
+    assert "[근거 기반 설명]" not in answer
+    assert "[DMC:" not in answer
+    assert "support:" not in answer
+    assert "titles:" not in answer
+    assert "It is necessary" in answer
+    assert "근거 DMC: S1000DBIKE-AAA-DA0-30-00-00AA-720A-A" in answer
+
+
+def test_v4_verbalizer_strips_thinking_tail_from_llm_output():
+    plan = AnswerPlan(
+        query="앞바퀴 설치 절차 알려줘",
+        intent=Intent.PROCEDURE,
+        detail_level=DetailLevel.NORMAL,
+        audience="technician",
+        claims=(AnswerClaim(text="Install the fork before installing the wheel.", evidence_dmcs=("DMC-FRONT-WHEEL",)),),
+        required_citations=("DMC-FRONT-WHEEL",),
+        forbidden_claims=("fabricated step sequence",),
+        sections=("절차",),
+    )
+
+    class ThinkingTailLLM:
+        def invoke(self, _prompt):
+            return "1. Install the fork before installing the wheel.\n]\nOkay, let me think through the AnswerPlan."
+
+    answer = verbalize_answer_plan(plan, llm=ThinkingTailLLM())
+
+    assert "]" not in answer
+    assert "Okay" not in answer
+    assert "let me think" not in answer
+    assert "AnswerPlan" not in answer
+    assert "Install the fork" in answer
+    assert "근거 DMC: DMC-FRONT-WHEEL" in answer
