@@ -267,7 +267,8 @@ def test_v4_verbalizer_strips_claim_labels_and_inline_metadata_from_llm_output()
     assert "[DMC:" not in answer
     assert "support:" not in answer
     assert "titles:" not in answer
-    assert "It is necessary" in answer
+    assert "포크와 브레이크" in answer
+    assert "It is necessary" not in answer
     assert "근거 DMC: S1000DBIKE-AAA-DA0-30-00-00AA-720A-A" in answer
 
 
@@ -293,5 +294,53 @@ def test_v4_verbalizer_strips_thinking_tail_from_llm_output():
     assert "Okay" not in answer
     assert "let me think" not in answer
     assert "AnswerPlan" not in answer
-    assert "Install the fork" in answer
+    assert "포크" in answer
+    assert "Install the fork" not in answer
     assert "근거 DMC: DMC-FRONT-WHEEL" in answer
+
+
+def test_v4_verbalizer_rewrites_english_evidence_to_clean_korean_user_answer():
+    plan = AnswerPlan(
+        query="앞바퀴 설치 절차 알려줘",
+        intent=Intent.PROCEDURE,
+        detail_level=DetailLevel.NORMAL,
+        audience="technician",
+        claims=(
+            AnswerClaim(
+                text="Install the fork and the brakes before installing the wheel. Hold the front of the bicycle.",
+                evidence_dmcs=("S1000DBIKE-AAA-DA0-30-00-00AA-720A-A",),
+            ),
+            AnswerClaim(
+                text="Install the wheel and be careful to not damage the chainring.",
+                evidence_dmcs=("S1000DBIKE-AAA-DA0-30-00-00AA-720A-A",),
+            ),
+            AnswerClaim(
+                text="Put the bike on the floor.",
+                evidence_dmcs=("S1000DBIKE-AAA-DA0-30-00-00AA-720A-A",),
+            ),
+        ),
+        required_citations=("S1000DBIKE-AAA-DA0-30-00-00AA-720A-A",),
+        forbidden_claims=("fabricated step sequence",),
+        sections=("절차",),
+    )
+
+    class EnglishLLM:
+        def invoke(self, _prompt):
+            return (
+                "1. Install the fork and the brakes before installing the wheel. Hold the front of the bicycle.\n"
+                "2. Install the wheel and be careful to not damage the chainring.\n"
+                "3. Put the bike on the floor."
+            )
+
+    answer = verbalize_answer_plan(plan, llm=EnglishLLM())
+
+    assert answer.startswith("앞바퀴 설치 절차는 다음과 같습니다")
+    assert "포크와 브레이크" in answer
+    assert "체인링" in answer
+    assert "자전거를 바닥에" in answer
+    assert "합니다고" not in answer
+    assert "Install the fork" not in answer
+    assert "Put the bike on the floor" not in answer
+    assert "AnswerPlan" not in answer
+    assert "[DMC:" not in answer
+    assert "근거 DMC: S1000DBIKE-AAA-DA0-30-00-00AA-720A-A" in answer
