@@ -11,7 +11,7 @@ from .claim_normalizer import normalize_claims
 def compose_korean_draft(plan: AnswerPlan) -> str:
     """Build a clean Korean user-facing draft without citations or metadata."""
     subject = subject_from_query(plan.query)
-    units = _normalized_units(plan)
+    units = _normalized_units(plan, limit=12 if plan.intent == Intent.PROCEDURE else 8)
     if plan.intent == Intent.PROCEDURE:
         lines = [f"{subject} 절차는 다음과 같습니다."]
         lines.extend(f"{idx}. {unit}" for idx, unit in enumerate(units, start=1))
@@ -33,9 +33,9 @@ def subject_from_query(query: str) -> str:
     return "정비 작업"
 
 
-def _normalized_units(plan: AnswerPlan) -> list[str]:
+def _normalized_units(plan: AnswerPlan, *, limit: int) -> list[str]:
     claims = _dedupe_claim_texts(plan)
-    units = normalize_claims(claims)
+    units = normalize_claims(claims, limit=limit)
     if units:
         return units
     return ["확인된 근거 문서가 있지만 사용자 답변으로 안전하게 재작성할 수 있는 핵심 문장이 부족합니다. 원문 근거를 함께 확인해 주세요."]

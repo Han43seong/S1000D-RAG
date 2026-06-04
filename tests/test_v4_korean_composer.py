@@ -56,3 +56,30 @@ def test_korean_composer_builds_procedure_answer_with_numbered_units():
     assert "2. 자전거 앞부분을 안정적으로 잡습니다." in draft
     assert "3. 자전거를 바닥에 내려놓습니다." in draft
     assert "근거 DMC" not in draft
+
+
+def test_korean_composer_preserves_more_procedure_units_than_descriptive_default():
+    plan = AnswerPlan(
+        query="앞바퀴 설치 절차 알려줘",
+        intent=Intent.PROCEDURE,
+        detail_level=DetailLevel.NORMAL,
+        audience="technician",
+        claims=(
+            AnswerClaim(text="Install the fork and the brakes before installing the wheel. Hold the front of the bicycle.", evidence_dmcs=("DMC-WHEEL",)),
+            AnswerClaim(text="Install the wheel and be careful to not damage the chainring.", evidence_dmcs=("DMC-WHEEL",)),
+            AnswerClaim(text="Close the light circuit breaker located on the handlebar. Put the bike on the floor.", evidence_dmcs=("DMC-WHEEL",)),
+            AnswerClaim(text="Open the light circuit breaker located on the handlebar. Disengage the fork from the chainring.", evidence_dmcs=("DMC-WHEEL",)),
+            AnswerClaim(text="Pushing the wheel forwards and down. Use specific oil if the fork do not desengage easily.", evidence_dmcs=("DMC-WHEEL",)),
+            AnswerClaim(text="Lift the wheel away from the frame. If not available, use any oil compliant with requirements.", evidence_dmcs=("DMC-WHEEL",)),
+        ),
+        required_citations=("DMC-WHEEL",),
+        forbidden_claims=("fabricated step sequence",),
+        sections=("절차",),
+    )
+
+    draft = compose_korean_draft(plan)
+
+    assert "9. 바퀴를 앞으로 밀고 아래로 내려 작업합니다." in draft
+    assert "10. 포크가 쉽게 분리되지 않으면 지정된 오일을 사용합니다." in draft
+    assert "11. 바퀴를 프레임에서 들어 올려 분리합니다." in draft
+    assert "12. 지정 오일이 없으면 요구사항을 만족하는 오일을 사용합니다." in draft

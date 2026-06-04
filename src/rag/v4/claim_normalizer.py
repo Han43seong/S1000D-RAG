@@ -54,9 +54,12 @@ def normalize_claim_text(text: str) -> list[str]:
         ("disengage the fork from the chainring", "포크를 체인링에서 분리합니다."),
         ("pushing the wheel forwards and down", "바퀴를 앞으로 밀고 아래로 내려 작업합니다."),
     ]
+    matches: list[tuple[int, str]] = []
     for english, korean in replacements:
-        if english in lowered:
-            units.append(korean)
+        pos = lowered.find(english)
+        if pos >= 0:
+            matches.append((pos, korean))
+    units = [korean for _, korean in sorted(matches, key=lambda item: item[0])]
     if units:
         return _remove_subsumed_units(_dedupe(units))
     if _contains_hangul(original):
