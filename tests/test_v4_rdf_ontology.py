@@ -1,6 +1,8 @@
 from src.rag.ontology import Intent, OntologyNode, ParsedQuery
 from src.rag.v4.rdf_exporter import export_ontology_jsonld, export_ontology_turtle, ontology_nodes_to_triples
-from src.rag.v4.rdf_resolver import RdfOntologyStore
+from rdflib import Graph
+
+from src.rag.v4.rdf_resolver import RdfOntologyStore, RdflibOntologyStore, build_rdf_ontology_store
 
 
 def _sample_nodes() -> list[OntologyNode]:
@@ -100,3 +102,34 @@ def test_rdf_store_resolves_parsed_query_to_primary_and_related_dmcs():
     assert result.primary_dmcs == ("BRAKE-PAD-CLEAN",)
     assert "BRAKE-DESC" in result.related_dmcs
     assert "WHEEL-INSTALL" not in result.related_dmcs
+
+
+def test_turtle_export_round_trips_through_rdflib_parser_and_sparql():
+    graph = Graph()
+    graph.parse(data=export_ontology_turtle(_sample_nodes()), format="turtle")
+
+    rows = list(
+        graph.query(
+            """PREFIX s1000d: <https://example.org/s1000d/>
+            SELECT DISTINCT ?dmc WHERE {
+              ?dm s1000d:hasTarget <https://example.org/s1000d/entity/brake-pad> .
+              ?dm s1000d:hasAction <https://example.org/s1000d/action/clean> .
+              ?dm s1000d:dmc ?dmc .
+            }"""
+        )
+    )
+
+    assert [str(row.dmc) for row in rows] == ["BRAKE-PAD-CLEAN"]
+
+
+def test_rdflib_store_resolves_with_local_sparql_backend():
+    store = RdflibOntologyStore.from_nodes(_sample_nodes())
+
+    assert store.find_procedure_dmcs("brake pad", "clean") == ("BRAKE-PAD-CLEAN",)
+    assert store.find_descriptive_dmcs("brake system") == ("BRAKE-DESC",)
+
+
+def test_rdf_store_factory_can_select_rdflib_backend():
+    store = build_rdf_ontology_store(_sample_nodes(), backend="rdflib")
+
+    assert isinstance(store, RdflibOntologyStore)

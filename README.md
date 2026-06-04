@@ -208,7 +208,12 @@ python scripts/validate_ontology_shapes.py
 # Run v4 locally with the in-memory RDF resolver.
 S1000D_RAG_PIPELINE=v4 python query.py "브레이크 작동원리를 자세히 설명해줘"
 
-# Optional future backend: route v4 RDF resolution to a SPARQL endpoint.
+# Run v4 through the local RDFLib parser/SPARQL backend.
+S1000D_RAG_PIPELINE=v4 \
+S1000D_RDF_BACKEND=rdflib \
+python query.py "브레이크 패드 청소 절차 알려줘"
+
+# Optional external backend: route v4 RDF resolution to a SPARQL endpoint.
 S1000D_RAG_PIPELINE=v4 \
 S1000D_SPARQL_ENDPOINT=http://localhost:7200/repositories/s1000d \
 python query.py "브레이크 패드 청소 절차 알려줘"

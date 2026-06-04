@@ -14,7 +14,7 @@ from urllib import request
 
 from src.rag.ontology import Intent, OntologyNode, ParsedQuery
 
-from .rdf_exporter import BASE_IRI, Triple, action_uri, dm_uri, entity_uri, ontology_nodes_to_triples
+from .rdf_exporter import BASE_IRI, Triple, action_uri, dm_uri, entity_uri, export_ontology_turtle, ontology_nodes_to_triples
 
 SparqlQueryFn = Callable[[str], dict]
 
@@ -187,11 +187,42 @@ class SparqlEndpointOntologyStore:
             return json.loads(response.read().decode("utf-8"))
 
 
+class RdflibOntologyStore(SparqlEndpointOntologyStore):
+    """Local RDFLib-backed ontology store for strict RDF parsing + SPARQL.
+
+    This backend exercises the exported Turtle through a real RDF parser and
+    SPARQL engine while preserving the same resolver contract as the in-memory
+    and remote GraphDB-compatible stores.
+    """
+
+    def __init__(self, graph):
+        self.graph = graph
+        super().__init__(endpoint="rdflib://local", query_fn=self._query_graph)
+
+    @classmethod
+    def from_nodes(cls, nodes: Iterable[OntologyNode]) -> "RdflibOntologyStore":
+        try:
+            from rdflib import Graph
+        except ImportError as exc:  # pragma: no cover - exercised only on missing optional dependency
+            raise RuntimeError("rdflib backend requested but rdflib is not installed") from exc
+
+        graph = Graph()
+        graph.parse(data=export_ontology_turtle(nodes), format="turtle")
+        return cls(graph)
+
+    def _query_graph(self, query: str) -> dict:
+        rows = self.graph.query(query)
+        bindings = [{"dmc": {"type": "literal", "value": str(row.dmc)}} for row in rows]
+        return {"head": {"vars": ["dmc"]}, "results": {"bindings": bindings}}
+
+
 def build_rdf_ontology_store(
-    nodes: Iterable[OntologyNode], sparql_endpoint: str | None = None
-) -> RdfOntologyStore | SparqlEndpointOntologyStore:
+    nodes: Iterable[OntologyNode], sparql_endpoint: str | None = None, backend: str | None = None
+) -> RdfOntologyStore | SparqlEndpointOntologyStore | RdflibOntologyStore:
     if sparql_endpoint:
         return SparqlEndpointOntologyStore(endpoint=sparql_endpoint)
+    if (backend or "").casefold() == "rdflib":
+        return RdflibOntologyStore.from_nodes(nodes)
     return RdfOntologyStore.from_nodes(nodes)
 
 

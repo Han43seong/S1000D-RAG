@@ -61,7 +61,11 @@ def run_rag_query_sync(
     parsed = parse_query(query)
     nodes = load_ontology_manifest()
     graph = build_graph_context(nodes)
-    rdf_store = build_rdf_ontology_store(nodes, sparql_endpoint=os.getenv("S1000D_SPARQL_ENDPOINT"))
+    rdf_store = build_rdf_ontology_store(
+        nodes,
+        sparql_endpoint=os.getenv("S1000D_SPARQL_ENDPOINT"),
+        backend=os.getenv("S1000D_RDF_BACKEND"),
+    )
     rdf_resolution = rdf_store.resolve_query(parsed)
     resolution = resolve_ontology(parsed, nodes)
     max_chunks = (options.top_k if options else 6) or 6
