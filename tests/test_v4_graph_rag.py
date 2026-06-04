@@ -469,3 +469,31 @@ def test_v4_verbalizer_rejects_bad_llm_polish_and_returns_composer_draft():
     assert "AnswerPlan" not in answer
     assert "[DMC:" not in answer
     assert "근거 DMC: BRAKE-AAA-DA1-00-00-00AA-041A-A" in answer
+
+
+def test_v4_verbalizer_removes_duplicate_normalized_procedure_steps():
+    plan = AnswerPlan(
+        query="앞바퀴 설치 절차 알려줘",
+        intent=Intent.PROCEDURE,
+        detail_level=DetailLevel.NORMAL,
+        audience="technician",
+        claims=(
+            AnswerClaim(
+                text="Lift the wheel away from the frame. If not available, use any oil compliant with requirements.",
+                evidence_dmcs=("DMC-FRONT-WHEEL",),
+            ),
+            AnswerClaim(
+                text="Lift the wheel away from the frame.",
+                evidence_dmcs=("DMC-FRONT-WHEEL",),
+            ),
+        ),
+        required_citations=("DMC-FRONT-WHEEL",),
+        forbidden_claims=("fabricated step sequence",),
+        sections=("절차",),
+    )
+
+    answer = verbalize_answer_plan(plan)
+
+    assert answer.count("바퀴를 프레임에서 들어 올려 분리합니다.") == 1
+    assert "지정 오일이 없으면 요구사항을 만족하는 오일을 사용합니다." in answer
+    assert "근거 DMC: DMC-FRONT-WHEEL" in answer
