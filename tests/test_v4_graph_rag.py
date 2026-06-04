@@ -3,6 +3,7 @@ from langchain_core.documents import Document
 from src.rag.ontology import DetailLevel, Intent, ParsedQuery
 from src.rag.v4.answer_plan import AnswerClaim, AnswerPlan, build_answer_plan
 from src.rag.v4.graph_schema import GraphEdge, GraphNode, NodeType, RelationType
+from src.rag.v4.rdf_resolver import RdfResolution
 from src.rag.v4.verbalizer import verbalize_answer_plan
 
 
@@ -42,6 +43,22 @@ def test_v4_answer_plan_maps_claims_to_evidence_and_forbidden_claims():
     assert plan.claims
     assert all(claim.evidence_dmcs for claim in plan.claims)
     assert "unsupported procedure steps" in plan.forbidden_claims
+
+
+def test_v4_answer_plan_includes_rdf_primary_and_related_citations():
+    parsed = ParsedQuery(
+        original="브레이크 패드 청소 절차 알려줘",
+        normalized="브레이크 패드 청소 절차 알려줘",
+        intent=Intent.PROCEDURE,
+        target="brake pad",
+        action="clean",
+    )
+    docs = [Document(page_content="Clean brake pad with approved material.", metadata={"dmc": "BRAKE-PAD-CLEAN"})]
+    rdf_resolution = RdfResolution(primary_dmcs=("BRAKE-PAD-CLEAN",), related_dmcs=("BRAKE-DESC",))
+
+    plan = build_answer_plan(parsed, docs, rdf_resolution=rdf_resolution)
+
+    assert plan.required_citations == ("BRAKE-PAD-CLEAN", "BRAKE-DESC")
 
 
 def test_v4_verbalizer_uses_llm_for_synthesis_but_keeps_grounding_contract():

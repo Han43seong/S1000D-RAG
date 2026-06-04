@@ -1,0 +1,628 @@
+@prefix s1000d: <https://example.org/s1000d/> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+s1000d:DataModule rdf:type owl:Class .
+s1000d:DescriptiveDataModule rdfs:subClassOf s1000d:DataModule .
+s1000d:ProceduralDataModule rdfs:subClassOf s1000d:DataModule .
+s1000d:FaultDataModule rdfs:subClassOf s1000d:DataModule .
+s1000d:System rdf:type owl:Class .
+s1000d:Component rdf:type owl:Class .
+s1000d:Action rdf:type owl:Class .
+<https://example.org/s1000d/dm/BRAKE-AAA-DA1-00-00-00AA-041A-A> rdf:type s1000d:DescriptiveDataModule .
+<https://example.org/s1000d/dm/BRAKE-AAA-DA1-00-00-00AA-041A-A> s1000d:dmc "BRAKE-AAA-DA1-00-00-00AA-041A-A" .
+<https://example.org/s1000d/dm/BRAKE-AAA-DA1-00-00-00AA-041A-A> rdfs:label "Brake system - Description" .
+<https://example.org/s1000d/dm/BRAKE-AAA-DA1-00-00-00AA-041A-A> s1000d:dmType "descriptive" .
+<https://example.org/s1000d/dm/BRAKE-AAA-DA1-00-00-00AA-041A-A> s1000d:snsCode "DA1" .
+<https://example.org/s1000d/entity/brake-system> rdf:type s1000d:System .
+<https://example.org/s1000d/entity/brake-system> rdfs:label "brake system" .
+<https://example.org/s1000d/dm/BRAKE-AAA-DA1-00-00-00AA-041A-A> s1000d:describes <https://example.org/s1000d/entity/brake-system> .
+<https://example.org/s1000d/dm/BRAKE-AAA-DA1-00-00-00AA-041A-A> s1000d:alias "브레이크" .
+<https://example.org/s1000d/dm/BRAKE-AAA-DA1-00-00-00AA-041A-A> s1000d:alias "브레이크 시스템" .
+<https://example.org/s1000d/dm/BRAKE-AAA-DA1-00-00-00AA-041A-A> s1000d:alias "brake" .
+<https://example.org/s1000d/dm/BRAKE-AAA-DA1-00-00-00AA-041A-A> s1000d:alias "brake system" .
+<https://example.org/s1000d/entity/brake-system> s1000d:hasComponent <https://example.org/s1000d/entity/%EB%B8%8C%EB%A0%88%EC%9D%B4%ED%81%AC-%EB%A0%88%EB%B2%84> .
+<https://example.org/s1000d/entity/%EB%B8%8C%EB%A0%88%EC%9D%B4%ED%81%AC-%EB%A0%88%EB%B2%84> rdf:type s1000d:Component .
+<https://example.org/s1000d/entity/%EB%B8%8C%EB%A0%88%EC%9D%B4%ED%81%AC-%EB%A0%88%EB%B2%84> rdfs:label "브레이크 레버" .
+<https://example.org/s1000d/entity/brake-system> s1000d:hasComponent <https://example.org/s1000d/entity/%EB%B8%8C%EB%A0%88%EC%9D%B4%ED%81%AC-%EC%BC%80%EC%9D%B4%EB%B8%94> .
+<https://example.org/s1000d/entity/%EB%B8%8C%EB%A0%88%EC%9D%B4%ED%81%AC-%EC%BC%80%EC%9D%B4%EB%B8%94> rdf:type s1000d:Component .
+<https://example.org/s1000d/entity/%EB%B8%8C%EB%A0%88%EC%9D%B4%ED%81%AC-%EC%BC%80%EC%9D%B4%EB%B8%94> rdfs:label "브레이크 케이블" .
+<https://example.org/s1000d/entity/brake-system> s1000d:hasComponent <https://example.org/s1000d/entity/%EB%B8%8C%EB%A0%88%EC%9D%B4%ED%81%AC-%EC%95%94> .
+<https://example.org/s1000d/entity/%EB%B8%8C%EB%A0%88%EC%9D%B4%ED%81%AC-%EC%95%94> rdf:type s1000d:Component .
+<https://example.org/s1000d/entity/%EB%B8%8C%EB%A0%88%EC%9D%B4%ED%81%AC-%EC%95%94> rdfs:label "브레이크 암" .
+<https://example.org/s1000d/entity/brake-system> s1000d:hasComponent <https://example.org/s1000d/entity/%EB%B8%8C%EB%A0%88%EC%9D%B4%ED%81%AC-%ED%8C%A8%EB%93%9C> .
+<https://example.org/s1000d/entity/%EB%B8%8C%EB%A0%88%EC%9D%B4%ED%81%AC-%ED%8C%A8%EB%93%9C> rdf:type s1000d:Component .
+<https://example.org/s1000d/entity/%EB%B8%8C%EB%A0%88%EC%9D%B4%ED%81%AC-%ED%8C%A8%EB%93%9C> rdfs:label "브레이크 패드" .
+<https://example.org/s1000d/dm/BRAKE-AAA-DA1-00-00-00AA-341A-A> rdf:type s1000d:ProceduralDataModule .
+<https://example.org/s1000d/dm/BRAKE-AAA-DA1-00-00-00AA-341A-A> s1000d:dmc "BRAKE-AAA-DA1-00-00-00AA-341A-A" .
+<https://example.org/s1000d/dm/BRAKE-AAA-DA1-00-00-00AA-341A-A> rdfs:label "Brake system - Manual test" .
+<https://example.org/s1000d/dm/BRAKE-AAA-DA1-00-00-00AA-341A-A> s1000d:dmType "procedural" .
+<https://example.org/s1000d/dm/BRAKE-AAA-DA1-00-00-00AA-341A-A> s1000d:snsCode "DA1" .
+<https://example.org/s1000d/dm/BRAKE-AAA-DA1-00-00-00AA-341A-A> s1000d:hasTarget <https://example.org/s1000d/entity/brake-system> .
+<https://example.org/s1000d/action/test> rdf:type s1000d:Action .
+<https://example.org/s1000d/action/test> rdfs:label "test" .
+<https://example.org/s1000d/dm/BRAKE-AAA-DA1-00-00-00AA-341A-A> s1000d:hasAction <https://example.org/s1000d/action/test> .
+<https://example.org/s1000d/dm/BRAKE-AAA-DA1-00-00-00AA-341A-A> s1000d:alias "브레이크 시스템" .
+<https://example.org/s1000d/dm/BRAKE-AAA-DA1-00-00-00AA-341A-A> s1000d:alias "브레이크" .
+<https://example.org/s1000d/dm/BRAKE-AAA-DA1-00-00-00AA-341A-A> s1000d:alias "brake system" .
+<https://example.org/s1000d/dm/BRAKE-AAA-DA1-00-00-00AA-341A-A> s1000d:alias "brake" .
+<https://example.org/s1000d/dm/BRAKE-AAA-DA1-00-00-00AA-341A-A> s1000d:alias "점검" .
+<https://example.org/s1000d/dm/BRAKE-AAA-DA1-00-00-00AA-341A-A> s1000d:alias "검사" .
+<https://example.org/s1000d/dm/BRAKE-AAA-DA1-00-00-00AA-341A-A> s1000d:alias "시험" .
+<https://example.org/s1000d/dm/BRAKE-AAA-DA1-00-00-00AA-341A-A> s1000d:alias "테스트" .
+<https://example.org/s1000d/dm/BRAKE-AAA-DA1-00-00-00AA-341A-A> s1000d:alias "확인" .
+<https://example.org/s1000d/dm/BRAKE-AAA-DA1-00-00-00AA-341A-A> s1000d:alias "test" .
+<https://example.org/s1000d/dm/BRAKE-AAA-DA1-00-00-00AA-341A-A> s1000d:alias "check" .
+<https://example.org/s1000d/dm/BRAKE-AAA-DA1-00-00-00AA-341A-A> s1000d:alias "inspection" .
+<https://example.org/s1000d/dm/BRAKE-AAA-DA1-10-00-00AA-251A-A> rdf:type s1000d:ProceduralDataModule .
+<https://example.org/s1000d/dm/BRAKE-AAA-DA1-10-00-00AA-251A-A> s1000d:dmc "BRAKE-AAA-DA1-10-00-00AA-251A-A" .
+<https://example.org/s1000d/dm/BRAKE-AAA-DA1-10-00-00AA-251A-A> rdfs:label "Brake pads - Clean with rubbing alcohol" .
+<https://example.org/s1000d/dm/BRAKE-AAA-DA1-10-00-00AA-251A-A> s1000d:dmType "procedural" .
+<https://example.org/s1000d/dm/BRAKE-AAA-DA1-10-00-00AA-251A-A> s1000d:snsCode "DA1" .
+<https://example.org/s1000d/entity/brake-pad> rdf:type s1000d:Component .
+<https://example.org/s1000d/entity/brake-pad> rdfs:label "brake pad" .
+<https://example.org/s1000d/dm/BRAKE-AAA-DA1-10-00-00AA-251A-A> s1000d:hasTarget <https://example.org/s1000d/entity/brake-pad> .
+<https://example.org/s1000d/action/clean> rdf:type s1000d:Action .
+<https://example.org/s1000d/action/clean> rdfs:label "clean" .
+<https://example.org/s1000d/dm/BRAKE-AAA-DA1-10-00-00AA-251A-A> s1000d:hasAction <https://example.org/s1000d/action/clean> .
+<https://example.org/s1000d/dm/BRAKE-AAA-DA1-10-00-00AA-251A-A> s1000d:alias "브레이크 패드" .
+<https://example.org/s1000d/dm/BRAKE-AAA-DA1-10-00-00AA-251A-A> s1000d:alias "브레이크패드" .
+<https://example.org/s1000d/dm/BRAKE-AAA-DA1-10-00-00AA-251A-A> s1000d:alias "brake pad" .
+<https://example.org/s1000d/dm/BRAKE-AAA-DA1-10-00-00AA-251A-A> s1000d:alias "brake pads" .
+<https://example.org/s1000d/dm/BRAKE-AAA-DA1-10-00-00AA-251A-A> s1000d:alias "청소" .
+<https://example.org/s1000d/dm/BRAKE-AAA-DA1-10-00-00AA-251A-A> s1000d:alias "세척" .
+<https://example.org/s1000d/dm/BRAKE-AAA-DA1-10-00-00AA-251A-A> s1000d:alias "clean" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-00-00AA-121A-A> rdf:type s1000d:ProceduralDataModule .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-00-00AA-121A-A> s1000d:dmc "S1000DBIKE-AAA-D00-00-00-00AA-121A-A" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-00-00AA-121A-A> rdfs:label "Bicycle - Pre-operation procedures (crew)" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-00-00AA-121A-A> s1000d:dmType "procedural" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-00-00AA-121A-A> s1000d:snsCode "D00" .
+<https://example.org/s1000d/entity/bicycle> rdf:type s1000d:Component .
+<https://example.org/s1000d/entity/bicycle> rdfs:label "bicycle" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-00-00AA-121A-A> s1000d:hasTarget <https://example.org/s1000d/entity/bicycle> .
+<https://example.org/s1000d/action/pre-operation-crew> rdf:type s1000d:Action .
+<https://example.org/s1000d/action/pre-operation-crew> rdfs:label "pre-operation (crew)" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-00-00AA-121A-A> s1000d:hasAction <https://example.org/s1000d/action/pre-operation-crew> .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-00-00AA-151A-A> rdf:type s1000d:ProceduralDataModule .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-00-00AA-151A-A> s1000d:dmc "S1000DBIKE-AAA-D00-00-00-00AA-151A-A" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-00-00AA-151A-A> rdfs:label "Bicycle - Post-operation procedures (crew)" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-00-00AA-151A-A> s1000d:dmType "procedural" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-00-00AA-151A-A> s1000d:snsCode "D00" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-00-00AA-151A-A> s1000d:hasTarget <https://example.org/s1000d/entity/bicycle> .
+<https://example.org/s1000d/action/post-operation-crew> rdf:type s1000d:Action .
+<https://example.org/s1000d/action/post-operation-crew> rdfs:label "post-operation (crew)" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-00-00AA-151A-A> s1000d:hasAction <https://example.org/s1000d/action/post-operation-crew> .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-00-00AA-258A-A> rdf:type s1000d:ProceduralDataModule .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-00-00AA-258A-A> s1000d:dmc "S1000DBIKE-AAA-D00-00-00-00AA-258A-A" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-00-00AA-258A-A> rdfs:label "Bicycle - Other procedures to clean" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-00-00AA-258A-A> s1000d:dmType "procedural" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-00-00AA-258A-A> s1000d:snsCode "D00" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-00-00AA-258A-A> s1000d:hasTarget <https://example.org/s1000d/entity/bicycle> .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-00-00AA-258A-A> s1000d:hasAction <https://example.org/s1000d/action/clean> .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-00-00AA-258A-A> s1000d:alias "청소" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-00-00AA-258A-A> s1000d:alias "세척" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-00-00AA-258A-A> s1000d:alias "clean" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-00-00AA-258B-A> rdf:type s1000d:ProceduralDataModule .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-00-00AA-258B-A> s1000d:dmc "S1000DBIKE-AAA-D00-00-00-00AA-258B-A" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-00-00AA-258B-A> rdfs:label "Bicycle - Other procedures to clean" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-00-00AA-258B-A> s1000d:dmType "procedural" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-00-00AA-258B-A> s1000d:snsCode "D00" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-00-00AA-258B-A> s1000d:hasTarget <https://example.org/s1000d/entity/bicycle> .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-00-00AA-258B-A> s1000d:hasAction <https://example.org/s1000d/action/clean> .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-00-00AA-258B-A> s1000d:alias "청소" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-00-00AA-258B-A> s1000d:alias "세척" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-00-00AA-258B-A> s1000d:alias "clean" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-00-00AA-330A-A> rdf:type s1000d:ProceduralDataModule .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-00-00AA-330A-A> s1000d:dmc "S1000DBIKE-AAA-D00-00-00-00AA-330A-A" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-00-00AA-330A-A> rdfs:label "Bicycle - Place on test stand" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-00-00AA-330A-A> s1000d:dmType "procedural" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-00-00AA-330A-A> s1000d:snsCode "D00" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-00-00AA-330A-A> s1000d:hasTarget <https://example.org/s1000d/entity/bicycle> .
+<https://example.org/s1000d/action/place-on-test-stand> rdf:type s1000d:Action .
+<https://example.org/s1000d/action/place-on-test-stand> rdfs:label "place on test stand" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-00-00AA-330A-A> s1000d:hasAction <https://example.org/s1000d/action/place-on-test-stand> .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-00-00AA-663A-A> rdf:type s1000d:ProceduralDataModule .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-00-00AA-663A-A> s1000d:dmc "S1000DBIKE-AAA-D00-00-00-00AA-663A-A" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-00-00AA-663A-A> rdfs:label "Bicycle - Standard repair procedures" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-00-00AA-663A-A> s1000d:dmType "procedural" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-00-00AA-663A-A> s1000d:snsCode "D00" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-00-00AA-663A-A> s1000d:hasTarget <https://example.org/s1000d/entity/bicycle> .
+<https://example.org/s1000d/action/standard-repair> rdf:type s1000d:Action .
+<https://example.org/s1000d/action/standard-repair> rdfs:label "standard repair" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-00-00AA-663A-A> s1000d:hasAction <https://example.org/s1000d/action/standard-repair> .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-01-00AA-341A-A> rdf:type s1000d:ProceduralDataModule .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-01-00AA-341A-A> s1000d:dmc "S1000DBIKE-AAA-D00-00-01-00AA-341A-A" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-01-00AA-341A-A> rdfs:label "Fork - Manual test" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-01-00AA-341A-A> s1000d:dmType "procedural" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-01-00AA-341A-A> s1000d:snsCode "D00" .
+<https://example.org/s1000d/entity/fork> rdf:type s1000d:Component .
+<https://example.org/s1000d/entity/fork> rdfs:label "fork" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-01-00AA-341A-A> s1000d:hasTarget <https://example.org/s1000d/entity/fork> .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-01-00AA-341A-A> s1000d:hasAction <https://example.org/s1000d/action/test> .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-01-00AA-341A-A> s1000d:alias "점검" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-01-00AA-341A-A> s1000d:alias "검사" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-01-00AA-341A-A> s1000d:alias "시험" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-01-00AA-341A-A> s1000d:alias "테스트" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-01-00AA-341A-A> s1000d:alias "확인" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-01-00AA-341A-A> s1000d:alias "test" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-01-00AA-341A-A> s1000d:alias "check" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-01-00AA-341A-A> s1000d:alias "inspection" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-01-00AA-520A-A> rdf:type s1000d:ProceduralDataModule .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-01-00AA-520A-A> s1000d:dmc "S1000DBIKE-AAA-D00-00-01-00AA-520A-A" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-01-00AA-520A-A> rdfs:label "Fork - Remove procedures" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-01-00AA-520A-A> s1000d:dmType "procedural" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-01-00AA-520A-A> s1000d:snsCode "D00" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-01-00AA-520A-A> s1000d:hasTarget <https://example.org/s1000d/entity/fork> .
+<https://example.org/s1000d/action/remove> rdf:type s1000d:Action .
+<https://example.org/s1000d/action/remove> rdfs:label "remove" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-01-00AA-520A-A> s1000d:hasAction <https://example.org/s1000d/action/remove> .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-01-00AA-520A-A> s1000d:alias "탈거" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-01-00AA-520A-A> s1000d:alias "제거" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-01-00AA-520A-A> s1000d:alias "분리" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-01-00AA-520A-A> s1000d:alias "remove" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-01-00AA-520A-A> s1000d:alias "removal" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-01-00AA-720A-A> rdf:type s1000d:ProceduralDataModule .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-01-00AA-720A-A> s1000d:dmc "S1000DBIKE-AAA-D00-00-01-00AA-720A-A" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-01-00AA-720A-A> rdfs:label "Fork - Install procedures" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-01-00AA-720A-A> s1000d:dmType "procedural" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-01-00AA-720A-A> s1000d:snsCode "D00" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-01-00AA-720A-A> s1000d:hasTarget <https://example.org/s1000d/entity/fork> .
+<https://example.org/s1000d/action/install> rdf:type s1000d:Action .
+<https://example.org/s1000d/action/install> rdfs:label "install" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-01-00AA-720A-A> s1000d:hasAction <https://example.org/s1000d/action/install> .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-01-00AA-720A-A> s1000d:alias "설치" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-01-00AA-720A-A> s1000d:alias "장착" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-01-00AA-720A-A> s1000d:alias "조립" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-01-00AA-720A-A> s1000d:alias "install" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-01-00AA-720A-A> s1000d:alias "installation" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-01-00AA-93AA-A> rdf:type s1000d:ProceduralDataModule .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-01-00AA-93AA-A> s1000d:dmc "S1000DBIKE-AAA-D00-00-01-00AA-93AA-A" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-01-00AA-93AA-A> rdfs:label "Bicycle axis - Modification procedures" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-01-00AA-93AA-A> s1000d:dmType "procedural" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-01-00AA-93AA-A> s1000d:snsCode "D00" .
+<https://example.org/s1000d/entity/bicycle-axis> rdf:type s1000d:Component .
+<https://example.org/s1000d/entity/bicycle-axis> rdfs:label "bicycle axis" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-01-00AA-93AA-A> s1000d:hasTarget <https://example.org/s1000d/entity/bicycle-axis> .
+<https://example.org/s1000d/action/modification> rdf:type s1000d:Action .
+<https://example.org/s1000d/action/modification> rdfs:label "modification" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-01-00AA-93AA-A> s1000d:hasAction <https://example.org/s1000d/action/modification> .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-01-00AB-720A-A> rdf:type s1000d:ProceduralDataModule .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-01-00AB-720A-A> s1000d:dmc "S1000DBIKE-AAA-D00-00-01-00AB-720A-A" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-01-00AB-720A-A> rdfs:label "Fork - Install procedures" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-01-00AB-720A-A> s1000d:dmType "procedural" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-01-00AB-720A-A> s1000d:snsCode "D00" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-01-00AB-720A-A> s1000d:hasTarget <https://example.org/s1000d/entity/fork> .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-01-00AB-720A-A> s1000d:hasAction <https://example.org/s1000d/action/install> .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-01-00AB-720A-A> s1000d:alias "설치" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-01-00AB-720A-A> s1000d:alias "장착" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-01-00AB-720A-A> s1000d:alias "조립" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-01-00AB-720A-A> s1000d:alias "install" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-D00-00-01-00AB-720A-A> s1000d:alias "installation" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-10-10-00AA-921A-A> rdf:type s1000d:ProceduralDataModule .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-10-10-00AA-921A-A> s1000d:dmc "S1000DBIKE-AAA-DA0-10-10-00AA-921A-A" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-10-10-00AA-921A-A> rdfs:label "Inner tube - Remove and install a new item" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-10-10-00AA-921A-A> s1000d:dmType "procedural" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-10-10-00AA-921A-A> s1000d:snsCode "DA0" .
+<https://example.org/s1000d/entity/inner-tube> rdf:type s1000d:Component .
+<https://example.org/s1000d/entity/inner-tube> rdfs:label "inner tube" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-10-10-00AA-921A-A> s1000d:hasTarget <https://example.org/s1000d/entity/inner-tube> .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-10-10-00AA-921A-A> s1000d:hasAction <https://example.org/s1000d/action/remove> .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-10-10-00AA-921A-A> s1000d:alias "탈거" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-10-10-00AA-921A-A> s1000d:alias "제거" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-10-10-00AA-921A-A> s1000d:alias "분리" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-10-10-00AA-921A-A> s1000d:alias "remove" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-10-10-00AA-921A-A> s1000d:alias "removal" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-10-20-00AA-215A-A> rdf:type s1000d:ProceduralDataModule .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-10-20-00AA-215A-A> s1000d:dmc "S1000DBIKE-AAA-DA0-10-20-00AA-215A-A" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-10-20-00AA-215A-A> rdfs:label "Tire - Fill with air" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-10-20-00AA-215A-A> s1000d:dmType "procedural" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-10-20-00AA-215A-A> s1000d:snsCode "DA0" .
+<https://example.org/s1000d/entity/tire> rdf:type s1000d:Component .
+<https://example.org/s1000d/entity/tire> rdfs:label "tire" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-10-20-00AA-215A-A> s1000d:hasTarget <https://example.org/s1000d/entity/tire> .
+<https://example.org/s1000d/action/fill-air> rdf:type s1000d:Action .
+<https://example.org/s1000d/action/fill-air> rdfs:label "fill air" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-10-20-00AA-215A-A> s1000d:hasAction <https://example.org/s1000d/action/fill-air> .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-10-20-00AA-215A-A> s1000d:alias "타이어" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-10-20-00AA-215A-A> s1000d:alias "tire" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-10-20-00AA-215A-A> s1000d:alias "tyre" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-10-20-00AA-362B-A> rdf:type s1000d:ProceduralDataModule .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-10-20-00AA-362B-A> s1000d:dmc "S1000DBIKE-AAA-DA0-10-20-00AA-362B-A" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-10-20-00AA-362B-A> rdfs:label "Tire - Check pressure" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-10-20-00AA-362B-A> s1000d:dmType "procedural" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-10-20-00AA-362B-A> s1000d:snsCode "DA0" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-10-20-00AA-362B-A> s1000d:hasTarget <https://example.org/s1000d/entity/tire> .
+<https://example.org/s1000d/action/check-pressure> rdf:type s1000d:Action .
+<https://example.org/s1000d/action/check-pressure> rdfs:label "check pressure" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-10-20-00AA-362B-A> s1000d:hasAction <https://example.org/s1000d/action/check-pressure> .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-10-20-00AA-362B-A> s1000d:alias "타이어" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-10-20-00AA-362B-A> s1000d:alias "tire" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-10-20-00AA-362B-A> s1000d:alias "tyre" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-10-20-00AA-921A-A> rdf:type s1000d:ProceduralDataModule .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-10-20-00AA-921A-A> s1000d:dmc "S1000DBIKE-AAA-DA0-10-20-00AA-921A-A" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-10-20-00AA-921A-A> rdfs:label "Tire - Remove and install a new item" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-10-20-00AA-921A-A> s1000d:dmType "procedural" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-10-20-00AA-921A-A> s1000d:snsCode "DA0" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-10-20-00AA-921A-A> s1000d:hasTarget <https://example.org/s1000d/entity/tire> .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-10-20-00AA-921A-A> s1000d:hasAction <https://example.org/s1000d/action/remove> .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-10-20-00AA-921A-A> s1000d:alias "타이어" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-10-20-00AA-921A-A> s1000d:alias "tire" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-10-20-00AA-921A-A> s1000d:alias "tyre" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-10-20-00AA-921A-A> s1000d:alias "탈거" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-10-20-00AA-921A-A> s1000d:alias "제거" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-10-20-00AA-921A-A> s1000d:alias "분리" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-10-20-00AA-921A-A> s1000d:alias "remove" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-10-20-00AA-921A-A> s1000d:alias "removal" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-20-00-00AA-412A-A> rdf:type s1000d:FaultDataModule .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-20-00-00AA-412A-A> s1000d:dmc "S1000DBIKE-AAA-DA0-20-00-00AA-412A-A" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-20-00-00AA-412A-A> rdfs:label "Rear wheel - Detected fault" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-20-00-00AA-412A-A> s1000d:dmType "fault" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-20-00-00AA-412A-A> s1000d:snsCode "DA0" .
+<https://example.org/s1000d/entity/rear-wheel> rdf:type s1000d:Component .
+<https://example.org/s1000d/entity/rear-wheel> rdfs:label "rear wheel" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-20-00-00AA-412A-A> s1000d:hasTarget <https://example.org/s1000d/entity/rear-wheel> .
+<https://example.org/s1000d/action/fault> rdf:type s1000d:Action .
+<https://example.org/s1000d/action/fault> rdfs:label "fault" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-20-00-00AA-412A-A> s1000d:hasAction <https://example.org/s1000d/action/fault> .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-20-00-00AA-412A-A> s1000d:alias "뒷바퀴" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-20-00-00AA-412A-A> s1000d:alias "후륜" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-20-00-00AA-412A-A> s1000d:alias "rear wheel" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-20-00-00AA-520A-A> rdf:type s1000d:ProceduralDataModule .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-20-00-00AA-520A-A> s1000d:dmc "S1000DBIKE-AAA-DA0-20-00-00AA-520A-A" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-20-00-00AA-520A-A> rdfs:label "Rear wheel - Remove procedures" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-20-00-00AA-520A-A> s1000d:dmType "procedural" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-20-00-00AA-520A-A> s1000d:snsCode "DA0" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-20-00-00AA-520A-A> s1000d:hasTarget <https://example.org/s1000d/entity/rear-wheel> .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-20-00-00AA-520A-A> s1000d:hasAction <https://example.org/s1000d/action/remove> .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-20-00-00AA-520A-A> s1000d:alias "뒷바퀴" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-20-00-00AA-520A-A> s1000d:alias "후륜" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-20-00-00AA-520A-A> s1000d:alias "rear wheel" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-20-00-00AA-520A-A> s1000d:alias "탈거" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-20-00-00AA-520A-A> s1000d:alias "제거" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-20-00-00AA-520A-A> s1000d:alias "분리" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-20-00-00AA-520A-A> s1000d:alias "remove" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-20-00-00AA-520A-A> s1000d:alias "removal" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-30-00-00AA-520A-A> rdf:type s1000d:ProceduralDataModule .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-30-00-00AA-520A-A> s1000d:dmc "S1000DBIKE-AAA-DA0-30-00-00AA-520A-A" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-30-00-00AA-520A-A> rdfs:label "Front wheel - Remove procedures" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-30-00-00AA-520A-A> s1000d:dmType "procedural" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-30-00-00AA-520A-A> s1000d:snsCode "DA0" .
+<https://example.org/s1000d/entity/front-wheel> rdf:type s1000d:Component .
+<https://example.org/s1000d/entity/front-wheel> rdfs:label "front wheel" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-30-00-00AA-520A-A> s1000d:hasTarget <https://example.org/s1000d/entity/front-wheel> .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-30-00-00AA-520A-A> s1000d:hasAction <https://example.org/s1000d/action/remove> .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-30-00-00AA-520A-A> s1000d:alias "앞바퀴" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-30-00-00AA-520A-A> s1000d:alias "전륜" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-30-00-00AA-520A-A> s1000d:alias "프론트 휠" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-30-00-00AA-520A-A> s1000d:alias "front wheel" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-30-00-00AA-520A-A> s1000d:alias "탈거" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-30-00-00AA-520A-A> s1000d:alias "제거" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-30-00-00AA-520A-A> s1000d:alias "분리" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-30-00-00AA-520A-A> s1000d:alias "remove" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-30-00-00AA-520A-A> s1000d:alias "removal" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-30-00-00AA-720A-A> rdf:type s1000d:ProceduralDataModule .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-30-00-00AA-720A-A> s1000d:dmc "S1000DBIKE-AAA-DA0-30-00-00AA-720A-A" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-30-00-00AA-720A-A> rdfs:label "Front wheel - Install procedures" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-30-00-00AA-720A-A> s1000d:dmType "procedural" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-30-00-00AA-720A-A> s1000d:snsCode "DA0" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-30-00-00AA-720A-A> s1000d:hasTarget <https://example.org/s1000d/entity/front-wheel> .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-30-00-00AA-720A-A> s1000d:hasAction <https://example.org/s1000d/action/install> .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-30-00-00AA-720A-A> s1000d:alias "앞바퀴" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-30-00-00AA-720A-A> s1000d:alias "전륜" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-30-00-00AA-720A-A> s1000d:alias "프론트 휠" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-30-00-00AA-720A-A> s1000d:alias "front wheel" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-30-00-00AA-720A-A> s1000d:alias "설치" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-30-00-00AA-720A-A> s1000d:alias "장착" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-30-00-00AA-720A-A> s1000d:alias "조립" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-30-00-00AA-720A-A> s1000d:alias "install" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA0-30-00-00AA-720A-A> s1000d:alias "installation" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA1-00-00-00AA-041A-A> rdf:type s1000d:DescriptiveDataModule .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA1-00-00-00AA-041A-A> s1000d:dmc "S1000DBIKE-AAA-DA1-00-00-00AA-041A-A" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA1-00-00-00AA-041A-A> rdfs:label "Brake system - Description" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA1-00-00-00AA-041A-A> s1000d:dmType "descriptive" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA1-00-00-00AA-041A-A> s1000d:snsCode "DA1" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA1-00-00-00AA-041A-A> s1000d:describes <https://example.org/s1000d/entity/brake-system> .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA1-00-00-00AA-041A-A> s1000d:alias "브레이크" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA1-00-00-00AA-041A-A> s1000d:alias "브레이크 시스템" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA1-00-00-00AA-041A-A> s1000d:alias "brake system" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA1-00-00-00AA-341A-A> rdf:type s1000d:ProceduralDataModule .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA1-00-00-00AA-341A-A> s1000d:dmc "S1000DBIKE-AAA-DA1-00-00-00AA-341A-A" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA1-00-00-00AA-341A-A> rdfs:label "Brake system - Manual test" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA1-00-00-00AA-341A-A> s1000d:dmType "procedural" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA1-00-00-00AA-341A-A> s1000d:snsCode "DA1" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA1-00-00-00AA-341A-A> s1000d:hasTarget <https://example.org/s1000d/entity/brake-system> .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA1-00-00-00AA-341A-A> s1000d:hasAction <https://example.org/s1000d/action/test> .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA1-00-00-00AA-341A-A> s1000d:alias "브레이크 시스템" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA1-00-00-00AA-341A-A> s1000d:alias "브레이크" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA1-00-00-00AA-341A-A> s1000d:alias "brake system" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA1-00-00-00AA-341A-A> s1000d:alias "brake" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA1-00-00-00AA-341A-A> s1000d:alias "점검" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA1-00-00-00AA-341A-A> s1000d:alias "검사" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA1-00-00-00AA-341A-A> s1000d:alias "시험" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA1-00-00-00AA-341A-A> s1000d:alias "테스트" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA1-00-00-00AA-341A-A> s1000d:alias "확인" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA1-00-00-00AA-341A-A> s1000d:alias "test" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA1-00-00-00AA-341A-A> s1000d:alias "check" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA1-00-00-00AA-341A-A> s1000d:alias "inspection" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA1-10-00-00AA-251A-A> rdf:type s1000d:ProceduralDataModule .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA1-10-00-00AA-251A-A> s1000d:dmc "S1000DBIKE-AAA-DA1-10-00-00AA-251A-A" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA1-10-00-00AA-251A-A> rdfs:label "Brake pads - Clean with rubbing alcohol" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA1-10-00-00AA-251A-A> s1000d:dmType "procedural" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA1-10-00-00AA-251A-A> s1000d:snsCode "DA1" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA1-10-00-00AA-251A-A> s1000d:hasTarget <https://example.org/s1000d/entity/brake-pad> .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA1-10-00-00AA-251A-A> s1000d:hasAction <https://example.org/s1000d/action/clean> .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA1-10-00-00AA-251A-A> s1000d:alias "브레이크 패드" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA1-10-00-00AA-251A-A> s1000d:alias "브레이크패드" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA1-10-00-00AA-251A-A> s1000d:alias "brake pad" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA1-10-00-00AA-251A-A> s1000d:alias "brake pads" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA1-10-00-00AA-251A-A> s1000d:alias "청소" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA1-10-00-00AA-251A-A> s1000d:alias "세척" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA1-10-00-00AA-251A-A> s1000d:alias "clean" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA1-20-00-00AA-520A-A> rdf:type s1000d:ProceduralDataModule .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA1-20-00-00AA-520A-A> s1000d:dmc "S1000DBIKE-AAA-DA1-20-00-00AA-520A-A" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA1-20-00-00AA-520A-A> rdfs:label "Front brake - Remove procedures" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA1-20-00-00AA-520A-A> s1000d:dmType "procedural" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA1-20-00-00AA-520A-A> s1000d:snsCode "DA1" .
+<https://example.org/s1000d/entity/front-brake> rdf:type s1000d:Component .
+<https://example.org/s1000d/entity/front-brake> rdfs:label "front brake" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA1-20-00-00AA-520A-A> s1000d:hasTarget <https://example.org/s1000d/entity/front-brake> .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA1-20-00-00AA-520A-A> s1000d:hasAction <https://example.org/s1000d/action/remove> .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA1-20-00-00AA-520A-A> s1000d:alias "탈거" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA1-20-00-00AA-520A-A> s1000d:alias "제거" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA1-20-00-00AA-520A-A> s1000d:alias "분리" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA1-20-00-00AA-520A-A> s1000d:alias "remove" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA1-20-00-00AA-520A-A> s1000d:alias "removal" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA1-20-00-00AA-720A-A> rdf:type s1000d:ProceduralDataModule .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA1-20-00-00AA-720A-A> s1000d:dmc "S1000DBIKE-AAA-DA1-20-00-00AA-720A-A" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA1-20-00-00AA-720A-A> rdfs:label "Front brake - Install procedures" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA1-20-00-00AA-720A-A> s1000d:dmType "procedural" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA1-20-00-00AA-720A-A> s1000d:snsCode "DA1" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA1-20-00-00AA-720A-A> s1000d:hasTarget <https://example.org/s1000d/entity/front-brake> .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA1-20-00-00AA-720A-A> s1000d:hasAction <https://example.org/s1000d/action/install> .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA1-20-00-00AA-720A-A> s1000d:alias "설치" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA1-20-00-00AA-720A-A> s1000d:alias "장착" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA1-20-00-00AA-720A-A> s1000d:alias "조립" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA1-20-00-00AA-720A-A> s1000d:alias "install" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA1-20-00-00AA-720A-A> s1000d:alias "installation" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA2-10-00-00AA-520A-A> rdf:type s1000d:ProceduralDataModule .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA2-10-00-00AA-520A-A> s1000d:dmc "S1000DBIKE-AAA-DA2-10-00-00AA-520A-A" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA2-10-00-00AA-520A-A> rdfs:label "Stem - Remove procedures" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA2-10-00-00AA-520A-A> s1000d:dmType "procedural" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA2-10-00-00AA-520A-A> s1000d:snsCode "DA2" .
+<https://example.org/s1000d/entity/stem> rdf:type s1000d:Component .
+<https://example.org/s1000d/entity/stem> rdfs:label "stem" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA2-10-00-00AA-520A-A> s1000d:hasTarget <https://example.org/s1000d/entity/stem> .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA2-10-00-00AA-520A-A> s1000d:hasAction <https://example.org/s1000d/action/remove> .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA2-10-00-00AA-520A-A> s1000d:alias "스템" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA2-10-00-00AA-520A-A> s1000d:alias "stem" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA2-10-00-00AA-520A-A> s1000d:alias "탈거" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA2-10-00-00AA-520A-A> s1000d:alias "제거" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA2-10-00-00AA-520A-A> s1000d:alias "분리" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA2-10-00-00AA-520A-A> s1000d:alias "remove" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA2-10-00-00AA-520A-A> s1000d:alias "removal" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA2-10-00-00AA-720A-A> rdf:type s1000d:ProceduralDataModule .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA2-10-00-00AA-720A-A> s1000d:dmc "S1000DBIKE-AAA-DA2-10-00-00AA-720A-A" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA2-10-00-00AA-720A-A> rdfs:label "Stem - Install procedures" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA2-10-00-00AA-720A-A> s1000d:dmType "procedural" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA2-10-00-00AA-720A-A> s1000d:snsCode "DA2" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA2-10-00-00AA-720A-A> s1000d:hasTarget <https://example.org/s1000d/entity/stem> .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA2-10-00-00AA-720A-A> s1000d:hasAction <https://example.org/s1000d/action/install> .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA2-10-00-00AA-720A-A> s1000d:alias "스템" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA2-10-00-00AA-720A-A> s1000d:alias "stem" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA2-10-00-00AA-720A-A> s1000d:alias "설치" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA2-10-00-00AA-720A-A> s1000d:alias "장착" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA2-10-00-00AA-720A-A> s1000d:alias "조립" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA2-10-00-00AA-720A-A> s1000d:alias "install" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA2-10-00-00AA-720A-A> s1000d:alias "installation" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA2-20-00-00AA-520A-A> rdf:type s1000d:ProceduralDataModule .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA2-20-00-00AA-520A-A> s1000d:dmc "S1000DBIKE-AAA-DA2-20-00-00AA-520A-A" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA2-20-00-00AA-520A-A> rdfs:label "Handlebar - Remove procedures" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA2-20-00-00AA-520A-A> s1000d:dmType "procedural" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA2-20-00-00AA-520A-A> s1000d:snsCode "DA2" .
+<https://example.org/s1000d/entity/handlebar> rdf:type s1000d:Component .
+<https://example.org/s1000d/entity/handlebar> rdfs:label "handlebar" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA2-20-00-00AA-520A-A> s1000d:hasTarget <https://example.org/s1000d/entity/handlebar> .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA2-20-00-00AA-520A-A> s1000d:hasAction <https://example.org/s1000d/action/remove> .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA2-20-00-00AA-520A-A> s1000d:alias "핸들바" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA2-20-00-00AA-520A-A> s1000d:alias "핸들 바" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA2-20-00-00AA-520A-A> s1000d:alias "handlebar" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA2-20-00-00AA-520A-A> s1000d:alias "탈거" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA2-20-00-00AA-520A-A> s1000d:alias "제거" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA2-20-00-00AA-520A-A> s1000d:alias "분리" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA2-20-00-00AA-520A-A> s1000d:alias "remove" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA2-20-00-00AA-520A-A> s1000d:alias "removal" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA2-20-00-00AA-720A-A> rdf:type s1000d:ProceduralDataModule .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA2-20-00-00AA-720A-A> s1000d:dmc "S1000DBIKE-AAA-DA2-20-00-00AA-720A-A" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA2-20-00-00AA-720A-A> rdfs:label "Handlebar - Install procedures" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA2-20-00-00AA-720A-A> s1000d:dmType "procedural" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA2-20-00-00AA-720A-A> s1000d:snsCode "DA2" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA2-20-00-00AA-720A-A> s1000d:hasTarget <https://example.org/s1000d/entity/handlebar> .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA2-20-00-00AA-720A-A> s1000d:hasAction <https://example.org/s1000d/action/install> .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA2-20-00-00AA-720A-A> s1000d:alias "핸들바" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA2-20-00-00AA-720A-A> s1000d:alias "핸들 바" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA2-20-00-00AA-720A-A> s1000d:alias "handlebar" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA2-20-00-00AA-720A-A> s1000d:alias "설치" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA2-20-00-00AA-720A-A> s1000d:alias "장착" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA2-20-00-00AA-720A-A> s1000d:alias "조립" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA2-20-00-00AA-720A-A> s1000d:alias "install" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA2-20-00-00AA-720A-A> s1000d:alias "installation" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA2-30-00-00AA-520A-A> rdf:type s1000d:ProceduralDataModule .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA2-30-00-00AA-520A-A> s1000d:dmc "S1000DBIKE-AAA-DA2-30-00-00AA-520A-A" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA2-30-00-00AA-520A-A> rdfs:label "Headset - Remove procedures" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA2-30-00-00AA-520A-A> s1000d:dmType "procedural" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA2-30-00-00AA-520A-A> s1000d:snsCode "DA2" .
+<https://example.org/s1000d/entity/headset> rdf:type s1000d:Component .
+<https://example.org/s1000d/entity/headset> rdfs:label "headset" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA2-30-00-00AA-520A-A> s1000d:hasTarget <https://example.org/s1000d/entity/headset> .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA2-30-00-00AA-520A-A> s1000d:hasAction <https://example.org/s1000d/action/remove> .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA2-30-00-00AA-520A-A> s1000d:alias "탈거" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA2-30-00-00AA-520A-A> s1000d:alias "제거" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA2-30-00-00AA-520A-A> s1000d:alias "분리" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA2-30-00-00AA-520A-A> s1000d:alias "remove" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA2-30-00-00AA-520A-A> s1000d:alias "removal" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA2-30-00-00AA-720A-A> rdf:type s1000d:ProceduralDataModule .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA2-30-00-00AA-720A-A> s1000d:dmc "S1000DBIKE-AAA-DA2-30-00-00AA-720A-A" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA2-30-00-00AA-720A-A> rdfs:label "Headset - Install procedures" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA2-30-00-00AA-720A-A> s1000d:dmType "procedural" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA2-30-00-00AA-720A-A> s1000d:snsCode "DA2" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA2-30-00-00AA-720A-A> s1000d:hasTarget <https://example.org/s1000d/entity/headset> .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA2-30-00-00AA-720A-A> s1000d:hasAction <https://example.org/s1000d/action/install> .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA2-30-00-00AA-720A-A> s1000d:alias "설치" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA2-30-00-00AA-720A-A> s1000d:alias "장착" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA2-30-00-00AA-720A-A> s1000d:alias "조립" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA2-30-00-00AA-720A-A> s1000d:alias "install" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA2-30-00-00AA-720A-A> s1000d:alias "installation" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA2-40-00-00AA-720A-A> rdf:type s1000d:ProceduralDataModule .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA2-40-00-00AA-720A-A> s1000d:dmc "S1000DBIKE-AAA-DA2-40-00-00AA-720A-A" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA2-40-00-00AA-720A-A> rdfs:label "Spacer - Install procedures" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA2-40-00-00AA-720A-A> s1000d:dmType "procedural" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA2-40-00-00AA-720A-A> s1000d:snsCode "DA2" .
+<https://example.org/s1000d/entity/spacer> rdf:type s1000d:Component .
+<https://example.org/s1000d/entity/spacer> rdfs:label "spacer" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA2-40-00-00AA-720A-A> s1000d:hasTarget <https://example.org/s1000d/entity/spacer> .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA2-40-00-00AA-720A-A> s1000d:hasAction <https://example.org/s1000d/action/install> .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA2-40-00-00AA-720A-A> s1000d:alias "설치" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA2-40-00-00AA-720A-A> s1000d:alias "장착" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA2-40-00-00AA-720A-A> s1000d:alias "조립" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA2-40-00-00AA-720A-A> s1000d:alias "install" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA2-40-00-00AA-720A-A> s1000d:alias "installation" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA3-10-00-00AA-921A-A> rdf:type s1000d:ProceduralDataModule .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA3-10-00-00AA-921A-A> s1000d:dmc "S1000DBIKE-AAA-DA3-10-00-00AA-921A-A" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA3-10-00-00AA-921A-A> rdfs:label "Horn - Remove and install a new item" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA3-10-00-00AA-921A-A> s1000d:dmType "procedural" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA3-10-00-00AA-921A-A> s1000d:snsCode "DA3" .
+<https://example.org/s1000d/entity/horn> rdf:type s1000d:Component .
+<https://example.org/s1000d/entity/horn> rdfs:label "horn" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA3-10-00-00AA-921A-A> s1000d:hasTarget <https://example.org/s1000d/entity/horn> .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA3-10-00-00AA-921A-A> s1000d:hasAction <https://example.org/s1000d/action/remove> .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA3-10-00-00AA-921A-A> s1000d:alias "탈거" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA3-10-00-00AA-921A-A> s1000d:alias "제거" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA3-10-00-00AA-921A-A> s1000d:alias "분리" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA3-10-00-00AA-921A-A> s1000d:alias "remove" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA3-10-00-00AA-921A-A> s1000d:alias "removal" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA4-10-00-00AA-241A-A> rdf:type s1000d:ProceduralDataModule .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA4-10-00-00AA-241A-A> s1000d:dmc "S1000DBIKE-AAA-DA4-10-00-00AA-241A-A" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA4-10-00-00AA-241A-A> rdfs:label "Chain - Oil" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA4-10-00-00AA-241A-A> s1000d:dmType "procedural" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA4-10-00-00AA-241A-A> s1000d:snsCode "DA4" .
+<https://example.org/s1000d/entity/chain> rdf:type s1000d:Component .
+<https://example.org/s1000d/entity/chain> rdfs:label "chain" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA4-10-00-00AA-241A-A> s1000d:hasTarget <https://example.org/s1000d/entity/chain> .
+<https://example.org/s1000d/action/oil> rdf:type s1000d:Action .
+<https://example.org/s1000d/action/oil> rdfs:label "oil" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA4-10-00-00AA-241A-A> s1000d:hasAction <https://example.org/s1000d/action/oil> .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA4-10-00-00AA-241A-A> s1000d:alias "체인" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA4-10-00-00AA-241A-A> s1000d:alias "chain" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA4-10-00-00AA-241A-A> s1000d:alias "오일" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA4-10-00-00AA-241A-A> s1000d:alias "윤활" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA4-10-00-00AA-241A-A> s1000d:alias "기름" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA4-10-00-00AA-241A-A> s1000d:alias "바르는" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA4-10-00-00AA-241A-A> s1000d:alias "oil" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA4-10-00-00AA-241A-A> s1000d:alias "lubricate" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA4-10-00-00AA-251B-A> rdf:type s1000d:ProceduralDataModule .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA4-10-00-00AA-251B-A> s1000d:dmc "S1000DBIKE-AAA-DA4-10-00-00AA-251B-A" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA4-10-00-00AA-251B-A> rdfs:label "Chain - Clean with chemical agent" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA4-10-00-00AA-251B-A> s1000d:dmType "procedural" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA4-10-00-00AA-251B-A> s1000d:snsCode "DA4" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA4-10-00-00AA-251B-A> s1000d:hasTarget <https://example.org/s1000d/entity/chain> .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA4-10-00-00AA-251B-A> s1000d:hasAction <https://example.org/s1000d/action/clean> .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA4-10-00-00AA-251B-A> s1000d:alias "체인" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA4-10-00-00AA-251B-A> s1000d:alias "chain" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA4-10-00-00AA-251B-A> s1000d:alias "청소" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA4-10-00-00AA-251B-A> s1000d:alias "세척" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA4-10-00-00AA-251B-A> s1000d:alias "clean" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA4-10-00-00AA-414A-A> rdf:type s1000d:FaultDataModule .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA4-10-00-00AA-414A-A> s1000d:dmc "S1000DBIKE-AAA-DA4-10-00-00AA-414A-A" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA4-10-00-00AA-414A-A> rdfs:label "Drive train - Correlated fault" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA4-10-00-00AA-414A-A> s1000d:dmType "fault" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA4-10-00-00AA-414A-A> s1000d:snsCode "DA4" .
+<https://example.org/s1000d/entity/drive-train> rdf:type s1000d:Component .
+<https://example.org/s1000d/entity/drive-train> rdfs:label "drive train" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA4-10-00-00AA-414A-A> s1000d:hasTarget <https://example.org/s1000d/entity/drive-train> .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA4-10-00-00AA-414A-A> s1000d:hasAction <https://example.org/s1000d/action/fault> .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA5-20-00-00AA-251C-A> rdf:type s1000d:ProceduralDataModule .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA5-20-00-00AA-251C-A> s1000d:dmc "S1000DBIKE-AAA-DA5-20-00-00AA-251C-A" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA5-20-00-00AA-251C-A> rdfs:label "Hubs - Clean with chemical agent" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA5-20-00-00AA-251C-A> s1000d:dmType "procedural" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA5-20-00-00AA-251C-A> s1000d:snsCode "DA5" .
+<https://example.org/s1000d/entity/hubs> rdf:type s1000d:Component .
+<https://example.org/s1000d/entity/hubs> rdfs:label "hubs" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA5-20-00-00AA-251C-A> s1000d:hasTarget <https://example.org/s1000d/entity/hubs> .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA5-20-00-00AA-251C-A> s1000d:hasAction <https://example.org/s1000d/action/clean> .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA5-20-00-00AA-251C-A> s1000d:alias "청소" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA5-20-00-00AA-251C-A> s1000d:alias "세척" .
+<https://example.org/s1000d/dm/S1000DBIKE-AAA-DA5-20-00-00AA-251C-A> s1000d:alias "clean" .
+<https://example.org/s1000d/dm/S1000DLIGHTING-AAA-D00-00-00-00AA-341A-A> rdf:type s1000d:ProceduralDataModule .
+<https://example.org/s1000d/dm/S1000DLIGHTING-AAA-D00-00-00-00AA-341A-A> s1000d:dmc "S1000DLIGHTING-AAA-D00-00-00-00AA-341A-A" .
+<https://example.org/s1000d/dm/S1000DLIGHTING-AAA-D00-00-00-00AA-341A-A> rdfs:label "Lights - Manual test" .
+<https://example.org/s1000d/dm/S1000DLIGHTING-AAA-D00-00-00-00AA-341A-A> s1000d:dmType "procedural" .
+<https://example.org/s1000d/dm/S1000DLIGHTING-AAA-D00-00-00-00AA-341A-A> s1000d:snsCode "D00" .
+<https://example.org/s1000d/entity/lights> rdf:type s1000d:Component .
+<https://example.org/s1000d/entity/lights> rdfs:label "lights" .
+<https://example.org/s1000d/dm/S1000DLIGHTING-AAA-D00-00-00-00AA-341A-A> s1000d:hasTarget <https://example.org/s1000d/entity/lights> .
+<https://example.org/s1000d/dm/S1000DLIGHTING-AAA-D00-00-00-00AA-341A-A> s1000d:hasAction <https://example.org/s1000d/action/test> .
+<https://example.org/s1000d/dm/S1000DLIGHTING-AAA-D00-00-00-00AA-341A-A> s1000d:alias "조명 시스템" .
+<https://example.org/s1000d/dm/S1000DLIGHTING-AAA-D00-00-00-00AA-341A-A> s1000d:alias "조명" .
+<https://example.org/s1000d/dm/S1000DLIGHTING-AAA-D00-00-00-00AA-341A-A> s1000d:alias "라이트" .
+<https://example.org/s1000d/dm/S1000DLIGHTING-AAA-D00-00-00-00AA-341A-A> s1000d:alias "등화" .
+<https://example.org/s1000d/dm/S1000DLIGHTING-AAA-D00-00-00-00AA-341A-A> s1000d:alias "lights" .
+<https://example.org/s1000d/dm/S1000DLIGHTING-AAA-D00-00-00-00AA-341A-A> s1000d:alias "lighting" .
+<https://example.org/s1000d/dm/S1000DLIGHTING-AAA-D00-00-00-00AA-341A-A> s1000d:alias "점검" .
+<https://example.org/s1000d/dm/S1000DLIGHTING-AAA-D00-00-00-00AA-341A-A> s1000d:alias "검사" .
+<https://example.org/s1000d/dm/S1000DLIGHTING-AAA-D00-00-00-00AA-341A-A> s1000d:alias "시험" .
+<https://example.org/s1000d/dm/S1000DLIGHTING-AAA-D00-00-00-00AA-341A-A> s1000d:alias "테스트" .
+<https://example.org/s1000d/dm/S1000DLIGHTING-AAA-D00-00-00-00AA-341A-A> s1000d:alias "확인" .
+<https://example.org/s1000d/dm/S1000DLIGHTING-AAA-D00-00-00-00AA-341A-A> s1000d:alias "test" .
+<https://example.org/s1000d/dm/S1000DLIGHTING-AAA-D00-00-00-00AA-341A-A> s1000d:alias "check" .
+<https://example.org/s1000d/dm/S1000DLIGHTING-AAA-D00-00-00-00AA-341A-A> s1000d:alias "inspection" .
+<https://example.org/s1000d/dm/S1000DLIGHTING-AAA-D00-00-00-00AA-413A-A> rdf:type s1000d:FaultDataModule .
+<https://example.org/s1000d/dm/S1000DLIGHTING-AAA-D00-00-00-00AA-413A-A> s1000d:dmc "S1000DLIGHTING-AAA-D00-00-00-00AA-413A-A" .
+<https://example.org/s1000d/dm/S1000DLIGHTING-AAA-D00-00-00-00AA-413A-A> rdfs:label "Lights - Observed fault" .
+<https://example.org/s1000d/dm/S1000DLIGHTING-AAA-D00-00-00-00AA-413A-A> s1000d:dmType "fault" .
+<https://example.org/s1000d/dm/S1000DLIGHTING-AAA-D00-00-00-00AA-413A-A> s1000d:snsCode "D00" .
+<https://example.org/s1000d/dm/S1000DLIGHTING-AAA-D00-00-00-00AA-413A-A> s1000d:hasTarget <https://example.org/s1000d/entity/lights> .
+<https://example.org/s1000d/dm/S1000DLIGHTING-AAA-D00-00-00-00AA-413A-A> s1000d:hasAction <https://example.org/s1000d/action/fault> .
+<https://example.org/s1000d/dm/S1000DLIGHTING-AAA-D00-00-00-00AA-413A-A> s1000d:alias "조명 시스템" .
+<https://example.org/s1000d/dm/S1000DLIGHTING-AAA-D00-00-00-00AA-413A-A> s1000d:alias "조명" .
+<https://example.org/s1000d/dm/S1000DLIGHTING-AAA-D00-00-00-00AA-413A-A> s1000d:alias "라이트" .
+<https://example.org/s1000d/dm/S1000DLIGHTING-AAA-D00-00-00-00AA-413A-A> s1000d:alias "등화" .
+<https://example.org/s1000d/dm/S1000DLIGHTING-AAA-D00-00-00-00AA-413A-A> s1000d:alias "lights" .
+<https://example.org/s1000d/dm/S1000DLIGHTING-AAA-D00-00-00-00AA-413A-A> s1000d:alias "lighting" .
+<https://example.org/s1000d/dm/S1000DLIGHTING-AAA-D00-00-00-00AA-700A-A> rdf:type s1000d:ProceduralDataModule .
+<https://example.org/s1000d/dm/S1000DLIGHTING-AAA-D00-00-00-00AA-700A-A> s1000d:dmc "S1000DLIGHTING-AAA-D00-00-00-00AA-700A-A" .
+<https://example.org/s1000d/dm/S1000DLIGHTING-AAA-D00-00-00-00AA-700A-A> rdfs:label "Lighting - Assemble, install and connect procedures" .
+<https://example.org/s1000d/dm/S1000DLIGHTING-AAA-D00-00-00-00AA-700A-A> s1000d:dmType "procedural" .
+<https://example.org/s1000d/dm/S1000DLIGHTING-AAA-D00-00-00-00AA-700A-A> s1000d:snsCode "D00" .
+<https://example.org/s1000d/dm/S1000DLIGHTING-AAA-D00-00-00-00AA-700A-A> s1000d:hasTarget <https://example.org/s1000d/entity/lights> .
+<https://example.org/s1000d/dm/S1000DLIGHTING-AAA-D00-00-00-00AA-700A-A> s1000d:hasAction <https://example.org/s1000d/action/install> .
+<https://example.org/s1000d/dm/S1000DLIGHTING-AAA-D00-00-00-00AA-700A-A> s1000d:alias "조명 시스템" .
+<https://example.org/s1000d/dm/S1000DLIGHTING-AAA-D00-00-00-00AA-700A-A> s1000d:alias "조명" .
+<https://example.org/s1000d/dm/S1000DLIGHTING-AAA-D00-00-00-00AA-700A-A> s1000d:alias "라이트" .
+<https://example.org/s1000d/dm/S1000DLIGHTING-AAA-D00-00-00-00AA-700A-A> s1000d:alias "등화" .
+<https://example.org/s1000d/dm/S1000DLIGHTING-AAA-D00-00-00-00AA-700A-A> s1000d:alias "lights" .
+<https://example.org/s1000d/dm/S1000DLIGHTING-AAA-D00-00-00-00AA-700A-A> s1000d:alias "lighting" .
+<https://example.org/s1000d/dm/S1000DLIGHTING-AAA-D00-00-00-00AA-700A-A> s1000d:alias "설치" .
+<https://example.org/s1000d/dm/S1000DLIGHTING-AAA-D00-00-00-00AA-700A-A> s1000d:alias "장착" .
+<https://example.org/s1000d/dm/S1000DLIGHTING-AAA-D00-00-00-00AA-700A-A> s1000d:alias "조립" .
+<https://example.org/s1000d/dm/S1000DLIGHTING-AAA-D00-00-00-00AA-700A-A> s1000d:alias "install" .
+<https://example.org/s1000d/dm/S1000DLIGHTING-AAA-D00-00-00-00AA-700A-A> s1000d:alias "installation" .
+<https://example.org/s1000d/dm/S1000DLIGHTING-AAA-D00-00-00-00AA-921A-A> rdf:type s1000d:ProceduralDataModule .
+<https://example.org/s1000d/dm/S1000DLIGHTING-AAA-D00-00-00-00AA-921A-A> s1000d:dmc "S1000DLIGHTING-AAA-D00-00-00-00AA-921A-A" .
+<https://example.org/s1000d/dm/S1000DLIGHTING-AAA-D00-00-00-00AA-921A-A> rdfs:label "Lighting - Remove and install a new item" .
+<https://example.org/s1000d/dm/S1000DLIGHTING-AAA-D00-00-00-00AA-921A-A> s1000d:dmType "procedural" .
+<https://example.org/s1000d/dm/S1000DLIGHTING-AAA-D00-00-00-00AA-921A-A> s1000d:snsCode "D00" .
+<https://example.org/s1000d/dm/S1000DLIGHTING-AAA-D00-00-00-00AA-921A-A> s1000d:hasTarget <https://example.org/s1000d/entity/lights> .
+<https://example.org/s1000d/dm/S1000DLIGHTING-AAA-D00-00-00-00AA-921A-A> s1000d:hasAction <https://example.org/s1000d/action/remove> .
+<https://example.org/s1000d/dm/S1000DLIGHTING-AAA-D00-00-00-00AA-921A-A> s1000d:alias "조명 시스템" .
+<https://example.org/s1000d/dm/S1000DLIGHTING-AAA-D00-00-00-00AA-921A-A> s1000d:alias "조명" .
+<https://example.org/s1000d/dm/S1000DLIGHTING-AAA-D00-00-00-00AA-921A-A> s1000d:alias "라이트" .
+<https://example.org/s1000d/dm/S1000DLIGHTING-AAA-D00-00-00-00AA-921A-A> s1000d:alias "등화" .
+<https://example.org/s1000d/dm/S1000DLIGHTING-AAA-D00-00-00-00AA-921A-A> s1000d:alias "lights" .
+<https://example.org/s1000d/dm/S1000DLIGHTING-AAA-D00-00-00-00AA-921A-A> s1000d:alias "lighting" .
+<https://example.org/s1000d/dm/S1000DLIGHTING-AAA-D00-00-00-00AA-921A-A> s1000d:alias "탈거" .
+<https://example.org/s1000d/dm/S1000DLIGHTING-AAA-D00-00-00-00AA-921A-A> s1000d:alias "제거" .
+<https://example.org/s1000d/dm/S1000DLIGHTING-AAA-D00-00-00-00AA-921A-A> s1000d:alias "분리" .
+<https://example.org/s1000d/dm/S1000DLIGHTING-AAA-D00-00-00-00AA-921A-A> s1000d:alias "remove" .
+<https://example.org/s1000d/dm/S1000DLIGHTING-AAA-D00-00-00-00AA-921A-A> s1000d:alias "removal" .

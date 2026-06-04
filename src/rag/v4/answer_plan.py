@@ -15,6 +15,7 @@ from src.rag.ontology import DetailLevel, Intent, ParsedQuery
 
 if TYPE_CHECKING:
     from .graph_builder import GraphContext
+    from .rdf_resolver import RdfResolution
 
 
 @dataclass(frozen=True)
@@ -36,11 +37,18 @@ class AnswerPlan:
     sections: tuple[str, ...]
 
 
-def build_answer_plan(parsed: ParsedQuery, documents: list[Document], graph_context: "GraphContext | None" = None) -> AnswerPlan:
+def build_answer_plan(
+    parsed: ParsedQuery,
+    documents: list[Document],
+    graph_context: "GraphContext | None" = None,
+    rdf_resolution: "RdfResolution | None" = None,
+) -> AnswerPlan:
     citations = tuple(dict.fromkeys(str(doc.metadata.get("dmc", "")) for doc in documents if doc.metadata.get("dmc")))
     if graph_context is not None:
         related = graph_context.related_dmcs_for_target(parsed.target)
         citations = tuple(dict.fromkeys((*citations, *related)))
+    if rdf_resolution is not None:
+        citations = tuple(dict.fromkeys((*citations, *rdf_resolution.primary_dmcs, *rdf_resolution.related_dmcs)))
     claims = tuple(_claim_from_document(doc) for doc in documents if doc.page_content.strip() and doc.metadata.get("dmc"))
     if not claims and citations:
         claims = (AnswerClaim(text="관련 S1000D 문서가 확인되었습니다.", evidence_dmcs=citations),)

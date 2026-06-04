@@ -2,7 +2,7 @@
 
 S1000D technical-manual chatbot project for closed-network maintenance support.
 
-This repository is a portfolio project that explores how to build a reliable AI assistant over S1000D Data Module XML manuals. The project started as a basic vector RAG chatbot, exposed the limits of generic RAG on structured maintenance manuals, and is now being redesigned toward a full ontology-guided Graph RAG + LLM reasoning architecture.
+This repository is a portfolio project that explores how to build a reliable AI assistant over S1000D Data Module XML manuals. The project started as a basic vector RAG chatbot, exposed the limits of generic RAG on structured maintenance manuals, and is now being redesigned toward an RDF/OWL-based ontology-guided Graph RAG + LLM reasoning architecture.
 
 ---
 
@@ -22,14 +22,16 @@ Build an on-prem / closed-network AI maintenance assistant that can answer Korea
 Vector-only RAG
 → ontology-aware RAG
 → deterministic ontology-first RAG
-→ final target: ontology-guided Graph RAG + LLM synthesis + quality gate
+→ RDF/OWL-based ontology-guided Graph RAG + LLM synthesis + quality gate
 ```
 
 **Final target:**
 
-An ontology-guided Graph RAG chatbot where:
+An RDF/OWL-based ontology-guided Graph RAG chatbot where:
 
-- ontology/knowledge graph controls intent, target, action, document relationships, and support level;
+- RDF/OWL knowledge graph is the canonical ontology representation;
+- SPARQL/GraphDB-compatible retrieval controls entities, DMCs, document relationships, and support level;
+- Vector DB is used as a constrained chunk-level evidence retriever inside graph-selected S1000D data modules;
 - RAG retrieves exact source evidence from S1000D XML/chunks;
 - LLM synthesizes user-friendly Korean explanations from structured evidence;
 - quality gates reject unsupported procedures, hallucinated tools/steps, malformed citations, and unsafe answers.
@@ -72,7 +74,7 @@ The most important part of this repository is not only the current code, but the
 | **v1** | Basic Vector DB RAG | Parse S1000D XML, index chunks in Chroma, retrieve by embeddings, answer with local LLM | Correct chunks could be retrieved but the local LLM produced malformed Korean, repeated DMCs, and unsupported claims. There was no strong support-level model. |
 | **v2** | Vector RAG + partial ontology concepts | Add DMC/SNS/graph hints, reranking, Korean aliases, and guard rules | Became patch-heavy. Ontology metadata existed but did not control the pipeline as the source of truth. |
 | **v3** | Deterministic ontology-first RAG | Parse query intent/target/action, resolve ontology metadata, plan evidence, compose deterministic Korean answers | Fast and stable, but LLM reasoning is mostly unused. It is an excellent baseline, not the final chatbot architecture. |
-| **v4** | Ontology-guided Graph RAG + LLM synthesis | Full target: graph-based evidence planning, source-grounded LLM synthesis, and quality gates | Current roadmap / next major implementation target. |
+| **v4** | RDF/OWL-based ontology-guided Graph RAG + LLM synthesis | Full target: RDF/OWL canonical ontology, SPARQL/GraphDB-compatible document selection, source-grounded LLM synthesis, and quality gates | Current roadmap / active implementation target. |
 
 Detailed history:
 
