@@ -13,7 +13,7 @@ import sys
 from src.chunker.indexer import load_chroma_index
 from src.config import CHROMA_COLLECTION_NAME, CHROMA_PERSIST_DIR
 from src.rag.models import get_embeddings, get_llm
-from src.rag.pipeline import run_rag_query_sync
+from src.rag.pipeline_v2 import run_rag_query_sync
 from src.types.rag import RagOptions, RerankOptions, SessionMeta
 
 
