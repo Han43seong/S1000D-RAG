@@ -441,7 +441,7 @@ def _chat_sync(req: ChatRequest) -> ChatResponse:
     # 모델 로딩
     models = _get_models()
 
-    from src.rag.pipeline_v2 import run_rag_query_sync
+    from src.rag.pipeline_runtime import run_rag_query_sync
     from src.types.rag import RagOptions, RerankOptions
 
     options = RagOptions(

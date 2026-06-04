@@ -16,7 +16,18 @@ from .manifest_builder import build_ontology_manifest, load_ontology_manifest, s
 from .query_parser import parse_query
 from .quality_gate import check_answer_quality, enforce_quality
 from .resolver import resolve_ontology
-from .schema import CandidateEvidence, Intent, OntologyNode, ParsedQuery, QualityGateResult, ResolutionResult, SupportLevel
+from .schema import (
+    AnswerMode,
+    Audience,
+    CandidateEvidence,
+    DetailLevel,
+    Intent,
+    OntologyNode,
+    ParsedQuery,
+    QualityGateResult,
+    ResolutionResult,
+    SupportLevel,
+)
 
 _legacy_path = Path(__file__).resolve().parent.parent / "ontology.py"
 if _legacy_path.exists():
@@ -33,7 +44,7 @@ if _legacy_path.exists():
                 globals()[_name] = getattr(_legacy, _name)
 
 __all__ = [
-    "CandidateEvidence", "Intent", "OntologyNode", "ParsedQuery", "QualityGateResult", "ResolutionResult", "SupportLevel",
+    "AnswerMode", "Audience", "CandidateEvidence", "DetailLevel", "Intent", "OntologyNode", "ParsedQuery", "QualityGateResult", "ResolutionResult", "SupportLevel",
     "build_ontology_manifest", "load_ontology_manifest", "save_ontology_manifest", "parse_query", "resolve_ontology",
     "plan_evidence", "retrieve_evidence", "compose_answer", "check_answer_quality", "enforce_quality",
 ]

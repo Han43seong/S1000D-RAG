@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 _EXPORT_MODULES = {
-    "run_rag_query": "src.rag.pipeline_v2",
-    "run_rag_query_sync": "src.rag.pipeline_v2",
+    "run_rag_query": "src.rag.pipeline_runtime",
+    "run_rag_query_sync": "src.rag.pipeline_runtime",
     "build_prompt": "src.rag.prompt",
     "enhance_query": "src.rag.query_enhancer",
     "expand_query": "src.rag.query_enhancer",

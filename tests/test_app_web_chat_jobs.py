@@ -263,7 +263,7 @@ def test_static_app_renders_reference_materials_panel():
 
 def test_chat_sync_persists_reference_materials_in_session(monkeypatch):
     from src.types.rag import RagResult, ReferenceMaterials, ReferenceMaterialItem
-    import src.rag.pipeline_v2 as pipeline
+    import src.rag.pipeline_runtime as pipeline
 
     monkeypatch.setattr(app_web, "sessions_db", {})
     monkeypatch.setattr(app_web, "_get_models", lambda: {"vectorstore": object(), "llm": object(), "reranker": None})

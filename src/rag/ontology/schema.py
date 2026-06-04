@@ -25,6 +25,27 @@ class SupportLevel(StrEnum):
     NONE = "none"
 
 
+class DetailLevel(StrEnum):
+    BRIEF = "brief"
+    NORMAL = "normal"
+    DETAILED = "detailed"
+
+
+class Audience(StrEnum):
+    GENERAL = "general"
+    TECHNICIAN = "technician"
+    EXPERT = "expert"
+
+
+class AnswerMode(StrEnum):
+    EXPLANATION = "explanation"
+    PROCEDURE = "procedure"
+    TROUBLESHOOTING = "troubleshooting"
+    COMPARISON = "comparison"
+    SUMMARY = "summary"
+    LOOKUP = "lookup"
+
+
 @dataclass(frozen=True)
 class OntologyNode:
     dmc: str
@@ -47,6 +68,11 @@ class ParsedQuery:
     target: str | None = None
     action: str | None = None
     dm_type: str | None = None
+    detail_level: DetailLevel = DetailLevel.NORMAL
+    audience: Audience = Audience.GENERAL
+    answer_mode: AnswerMode = AnswerMode.EXPLANATION
+    requested_sections: tuple[str, ...] = ()
+    referenced_dmcs: tuple[str, ...] = ()
     confidence: float = 0.0
     matched_aliases: tuple[str, ...] = ()
     follow_up: bool = False

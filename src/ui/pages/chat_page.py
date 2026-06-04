@@ -141,7 +141,7 @@ def _handle_question(question: str, chunk_count: int) -> None:
     # RAG 파이프라인 실행
     with st.chat_message("assistant"):
         with st.spinner("답변 생성 중..."):
-            from src.rag.pipeline_v2 import run_rag_query_sync
+            from src.rag.pipeline_runtime import run_rag_query_sync
             from src.types.rag import RagOptions, RerankOptions
 
             top_k = _get_setting("top_k", 10)

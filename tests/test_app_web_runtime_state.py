@@ -71,7 +71,7 @@ def test_chat_retries_once_on_transient_llama_decode_error(monkeypatch):
         return RagResult(answer="재시도 후 성공", evidences=[])
 
     monkeypatch.setattr(app_web, "_get_models", lambda: {"vectorstore": object(), "llm": MagicMock(), "reranker": None})
-    monkeypatch.setattr("src.rag.pipeline_v2.run_rag_query_sync", flaky_run_rag_query_sync)
+    monkeypatch.setattr("src.rag.pipeline_runtime.run_rag_query_sync", flaky_run_rag_query_sync)
 
     response = app_web._chat_sync(app_web.ChatRequest(session_id="retry-unit", question="브레이크 설명"))
 
