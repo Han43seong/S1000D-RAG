@@ -186,6 +186,29 @@ class SparqlEndpointOntologyStore:
             return json.loads(response.read().decode("utf-8"))
 
 
+class FallingBackOntologyStore:
+    """Resolve with a primary RDF/SPARQL store and fallback to local RDF on failure."""
+
+    def __init__(self, primary, fallback):
+        self.primary = primary
+        self.fallback = fallback
+
+    def resolve_query(self, parsed: ParsedQuery) -> RdfResolution:
+        try:
+            return self.primary.resolve_query(parsed)
+        except Exception as exc:  # pragma: no cover - exact backend failures vary
+            resolution = self.fallback.resolve_query(parsed)
+            paths = (
+                f"RDF primary store unavailable; fallback store used ({type(exc).__name__}: {exc})",
+                *resolution.graph_paths,
+            )
+            return RdfResolution(
+                primary_dmcs=resolution.primary_dmcs,
+                related_dmcs=resolution.related_dmcs,
+                graph_paths=paths,
+            )
+
+
 class RdflibOntologyStore(SparqlEndpointOntologyStore):
     """Local RDFLib-backed ontology store for strict RDF parsing + SPARQL.
 
@@ -241,12 +264,16 @@ class RdflibOntologyStore(SparqlEndpointOntologyStore):
 
 def build_rdf_ontology_store(
     nodes: Iterable[OntologyNode], sparql_endpoint: str | None = None, backend: str | None = None
-) -> RdfOntologyStore | SparqlEndpointOntologyStore | RdflibOntologyStore:
+) -> RdfOntologyStore | SparqlEndpointOntologyStore | RdflibOntologyStore | FallingBackOntologyStore:
+    local_store = RdfOntologyStore.from_nodes(nodes)
     if sparql_endpoint:
-        return SparqlEndpointOntologyStore(endpoint=sparql_endpoint)
+        return FallingBackOntologyStore(
+            primary=SparqlEndpointOntologyStore(endpoint=sparql_endpoint),
+            fallback=local_store,
+        )
     if (backend or "").casefold() == "rdflib":
         return RdflibOntologyStore.from_nodes(nodes)
-    return RdfOntologyStore.from_nodes(nodes)
+    return local_store
 
 
 def _select_dmc_query(where_clause: str) -> str:

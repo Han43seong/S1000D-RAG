@@ -1,5 +1,5 @@
 from src.rag.ontology import Intent, OntologyNode, ParsedQuery
-from src.rag.v4.rdf_resolver import SparqlEndpointOntologyStore, build_rdf_ontology_store
+from src.rag.v4.rdf_resolver import FallingBackOntologyStore, SparqlEndpointOntologyStore, build_rdf_ontology_store
 
 
 def test_sparql_endpoint_resolves_procedure_dmcs_from_json_bindings():
@@ -58,7 +58,8 @@ def test_rdf_store_factory_uses_sparql_endpoint_when_configured():
 
     store = build_rdf_ontology_store(nodes, sparql_endpoint="http://graphdb.example/repositories/s1000d")
 
-    assert isinstance(store, SparqlEndpointOntologyStore)
+    assert isinstance(store, FallingBackOntologyStore)
+    assert isinstance(store.primary, SparqlEndpointOntologyStore)
 
 
 def test_sparql_endpoint_resolve_query_preserves_related_dmcs_from_primary_resolution():
@@ -80,3 +81,44 @@ def test_sparql_endpoint_resolve_query_preserves_related_dmcs_from_primary_resol
 
     assert resolution.primary_dmcs == ("BRAKE-PAD-CLEAN",)
     assert resolution.related_dmcs == ("BRAKE-DESC",)
+
+
+def test_sparql_endpoint_failure_falls_back_to_local_rdf_store():
+    nodes = [
+        OntologyNode(
+            dmc="BRAKE-PAD-CLEAN",
+            title="Brake pad cleaning",
+            dm_type="procedural",
+            target="brake pad",
+            action="clean",
+        ),
+        OntologyNode(
+            dmc="BRAKE-DESC",
+            title="Brake system description",
+            dm_type="descriptive",
+            target="brake system",
+        ),
+    ]
+
+    def broken_query(_query: str) -> dict:
+        raise TimeoutError("GraphDB endpoint unavailable")
+
+    primary = SparqlEndpointOntologyStore(
+        endpoint="http://graphdb.example/repositories/s1000d",
+        query_fn=broken_query,
+    )
+    fallback = build_rdf_ontology_store(nodes)
+    store = FallingBackOntologyStore(primary=primary, fallback=fallback)
+    parsed = ParsedQuery(
+        original="브레이크 패드 청소 절차 알려줘",
+        normalized="브레이크 패드 청소 절차 알려줘",
+        intent=Intent.PROCEDURE,
+        target="brake pad",
+        action="clean",
+    )
+
+    resolution = store.resolve_query(parsed)
+
+    assert resolution.primary_dmcs == ("BRAKE-PAD-CLEAN",)
+    assert resolution.related_dmcs == ("BRAKE-DESC",)
+    assert any("fallback" in path.casefold() for path in resolution.graph_paths)

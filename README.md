@@ -87,7 +87,7 @@ Detailed history:
 
 ## 4. Current runtime state
 
-The current transition runtime is closest to **v3 deterministic ontology-first RAG**.
+The current runtime is **v4 RDF/AnswerPlan reference-complete** for the S1000D portfolio scope. Earlier v3 deterministic ontology-first behavior remains available as the stable baseline, but the latest v4 path adds RDF/RDFLib/SPARQL-compatible ontology resolution, structured AnswerPlan synthesis, citation/support metadata, graph-path explainability, and UI/API metadata exposure.
 
 High-level flow:
 
@@ -122,19 +122,18 @@ Current strengths:
 - stable demo behavior;
 - UI separation of answer, evidence, and reference materials.
 
-Current limitations:
+Closure notes:
 
-- not yet a full ontology-based LLM reasoning chatbot;
-- answer composer still contains deterministic domain-specific responses;
-- multi-document synthesis is limited;
-- detail level and user expertise are not fully modeled;
-- graph relationships such as component/procedure/figure/warning/tool/reference links need to become first-class.
+- v4 is complete as a reference implementation, not as a production GraphDB deployment;
+- deterministic domain-specific responses intentionally remain for stable demos and safety fallbacks;
+- true enterprise operation would require a production corpus, permission model, deployment hardening, and larger-scale graph/index operations;
+- the next product direction is an internal business-document chatbot, so no further S1000D/MRO-specific guard expansion is planned.
 
 ---
 
-## 5. Final target: v4 ontology-guided Graph RAG
+## 5. Reference-complete v4 ontology-guided Graph RAG
 
-The final architecture should not be “LLM over chunks.” It should be a controlled neuro-symbolic pipeline:
+The reference architecture is not “LLM over chunks.” It is a controlled neuro-symbolic pipeline:
 
 ```text
 User Question
@@ -214,6 +213,8 @@ S1000D_RDF_BACKEND=rdflib \
 python query.py "브레이크 패드 청소 절차 알려줘"
 
 # Optional external backend: route v4 RDF resolution to a SPARQL endpoint.
+# If the endpoint is unavailable, v4 falls back to the local in-memory RDF store
+# and records the fallback in ontology_trace.graph_paths.
 S1000D_RAG_PIPELINE=v4 \
 S1000D_SPARQL_ENDPOINT=http://localhost:7200/repositories/s1000d \
 python query.py "브레이크 패드 청소 절차 알려줘"
