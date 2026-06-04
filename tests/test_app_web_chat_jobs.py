@@ -287,6 +287,38 @@ def test_chat_sync_persists_reference_materials_in_session(monkeypatch):
     assert message["reference_materials"]["warnings"][0]["id"] == "warning:1"
 
 
+def test_chat_sync_exposes_and_persists_v4_metadata(monkeypatch):
+    from src.types.rag import RagResult, V4ResponseMetadata
+    import src.rag.pipeline_runtime as pipeline
+
+    monkeypatch.setattr(app_web, "sessions_db", {})
+    monkeypatch.setattr(app_web, "_get_models", lambda: {"vectorstore": object(), "llm": object(), "reranker": None})
+
+    def fake_run_rag_query_sync(**kwargs):
+        return RagResult(
+            answer="직접 확인되지 않았습니다.",
+            evidences=[],
+            v4_metadata=V4ResponseMetadata(
+                support_level="related",
+                runtime_mode="deterministic_fallback",
+                required_citations=["BRAKE-DESC"],
+                forbidden_claims=["unsupported requested procedure"],
+                ontology_trace={"rdf_related_dmcs": ["BRAKE-DESC"]},
+            ),
+        )
+
+    monkeypatch.setattr(pipeline, "run_rag_query_sync", fake_run_rag_query_sync)
+
+    response = app_web._chat_sync(app_web.ChatRequest(session_id="session-v4-meta", question="절차 알려줘"))
+
+    payload = response.model_dump()
+    assert payload["v4_metadata"]["support_level"] == "related"
+    assert payload["v4_metadata"]["runtime_mode"] == "deterministic_fallback"
+    assert payload["v4_metadata"]["required_citations"] == ["BRAKE-DESC"]
+    message = app_web.sessions_db["session-v4-meta"]["messages"][-1]
+    assert message["v4_metadata"]["forbidden_claims"] == ["unsupported requested procedure"]
+
+
 def test_graphic_asset_endpoint_serves_known_asset_and_rejects_unsafe(monkeypatch, tmp_path):
     (tmp_path / "ICN-SAFE-001-01.PNG").write_bytes(b"png")
     monkeypatch.setattr(app_web, "GRAPHIC_ASSET_ROOT", tmp_path)

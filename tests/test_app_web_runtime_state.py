@@ -61,6 +61,23 @@ def test_status_reports_busy_state_without_loading_models(monkeypatch):
     assert data["model_name"] == "Unit Model"
 
 
+def test_health_alias_reports_same_readiness_payload_as_status(monkeypatch):
+    monkeypatch.setattr(app_web, "_get_chunk_count", lambda: 7)
+    monkeypatch.setattr(
+        "src.runtime.model_registry.get_model_runtime_config",
+        lambda: _RuntimeConfig(),
+    )
+    monkeypatch.setitem(app_web._chat_state, "busy", False)
+    monkeypatch.setitem(app_web._chat_state, "started_at", None)
+
+    client = TestClient(app_web.app)
+    status = client.get("/api/status")
+    health = client.get("/api/health")
+
+    assert health.status_code == 200
+    assert health.json() == status.json()
+
+
 def test_chat_retries_once_on_transient_llama_decode_error(monkeypatch):
     calls = {"count": 0}
 

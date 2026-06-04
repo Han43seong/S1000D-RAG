@@ -25,7 +25,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from src.types.rag import ReferenceMaterials
+from src.types.rag import ReferenceMaterials, V4ResponseMetadata
 from src.rag.evidence_trail import DEFAULT_GRAPHIC_ASSET_ROOT, resolve_graphic_asset_file
 
 from src.config import (
@@ -198,6 +198,7 @@ class ChatResponse(BaseModel):
     answer: str
     evidences: list[EvidenceResponse] = Field(default_factory=list)
     reference_materials: ReferenceMaterials = Field(default_factory=ReferenceMaterials)
+    v4_metadata: V4ResponseMetadata | None = None
     llm_sec: float = 0
 
 
@@ -287,6 +288,7 @@ class ChatJobResponse(BaseModel):
     answer: str | None = None
     evidences: list[EvidenceResponse] = Field(default_factory=list)
     reference_materials: ReferenceMaterials = Field(default_factory=ReferenceMaterials)
+    v4_metadata: V4ResponseMetadata | None = None
     llm_sec: float = 0
     error: str | None = None
     created_at: str
@@ -384,6 +386,11 @@ async def get_status() -> StatusResponse:
         vlm_repo_id=cfg.vlm_profile.repo_id,
         reranker_model=cfg.reranker.model,
     )
+
+
+@app.get("/api/health")
+async def get_health() -> StatusResponse:
+    return await get_status()
 
 
 @app.get("/api/config")
@@ -515,11 +522,18 @@ def _chat_sync(req: ChatRequest) -> ChatResponse:
         "content": display_answer,
         "evidences": [e.model_dump() for e in evidences],
         "reference_materials": result.reference_materials.model_dump(),
+        "v4_metadata": result.v4_metadata.model_dump() if result.v4_metadata else None,
         "llm_sec": llm_sec,
     })
     session["updated_at"] = datetime.now().isoformat()
 
-    return ChatResponse(answer=display_answer, evidences=evidences, reference_materials=result.reference_materials, llm_sec=llm_sec)
+    return ChatResponse(
+        answer=display_answer,
+        evidences=evidences,
+        reference_materials=result.reference_materials,
+        v4_metadata=result.v4_metadata,
+        llm_sec=llm_sec,
+    )
 
 
 def _job_response(job: dict) -> ChatJobResponse:
@@ -532,6 +546,7 @@ def _job_response(job: dict) -> ChatJobResponse:
         answer=job.get("answer"),
         evidences=job.get("evidences") or [],
         reference_materials=job.get("reference_materials") or ReferenceMaterials(),
+        v4_metadata=job.get("v4_metadata"),
         llm_sec=job.get("llm_sec") or 0,
         error=job.get("error"),
         created_at=job["created_at"],
@@ -565,6 +580,7 @@ async def _run_chat_job(job_id: str) -> None:
         job["answer"] = result.answer
         job["evidences"] = result.evidences
         job["reference_materials"] = result.reference_materials.model_dump()
+        job["v4_metadata"] = result.v4_metadata.model_dump() if result.v4_metadata else None
         job["llm_sec"] = result.llm_sec
     except Exception as exc:  # pragma: no cover - defensive runtime path
         logger.exception("Chat job failed: %s", job_id)
@@ -597,6 +613,7 @@ async def create_chat_job(req: ChatRequest) -> ChatJobResponse:
         "answer": None,
         "evidences": [],
         "reference_materials": {},
+        "v4_metadata": None,
         "llm_sec": 0,
         "error": None,
         "cancel_requested": False,

@@ -110,12 +110,11 @@ class RdfOntologyStore:
         if not target:
             return ()
         paths: list[str] = []
-        target_ref = entity_uri(target)
         for dmc in (*primary, *related):
             dm = dm_uri(dmc)
             for subject, pred, obj in self.triples:
                 if subject == dm and obj.startswith(f"<{BASE_IRI}/entity/"):
-                    paths.append(f"{target_ref} <- {pred} <- {dm}")
+                    paths.append(f"{dm} -[{pred}]-> {obj}")
         return tuple(dict.fromkeys(paths))
 
 
@@ -215,6 +214,30 @@ class RdflibOntologyStore(SparqlEndpointOntologyStore):
         bindings = [{"dmc": {"type": "literal", "value": str(row.dmc)}} for row in rows]
         return {"head": {"vars": ["dmc"]}, "results": {"bindings": bindings}}
 
+    def resolve_query(self, parsed: ParsedQuery) -> RdfResolution:
+        resolution = super().resolve_query(parsed)
+        paths = self._graph_paths_for_dmcs(resolution.all_dmcs)
+        return RdfResolution(
+            primary_dmcs=resolution.primary_dmcs,
+            related_dmcs=resolution.related_dmcs,
+            graph_paths=paths or resolution.graph_paths,
+        )
+
+    def _graph_paths_for_dmcs(self, dmcs: tuple[str, ...]) -> tuple[str, ...]:
+        paths: list[str] = []
+        for dmc in dmcs:
+            rows = self.graph.query(
+                f"""PREFIX s1000d: <{BASE_IRI}/>
+                SELECT DISTINCT ?dm ?pred ?entity WHERE {{
+                  ?dm s1000d:dmc {json.dumps(dmc)} .
+                  ?dm ?pred ?entity .
+                  VALUES ?pred {{ s1000d:describes s1000d:hasTarget }}
+                }}"""
+            )
+            for row in rows:
+                paths.append(f"<{row.dm}> -[{_compact_predicate(str(row.pred))}]-> <{row.entity}>")
+        return tuple(dict.fromkeys(paths))
+
 
 def build_rdf_ontology_store(
     nodes: Iterable[OntologyNode], sparql_endpoint: str | None = None, backend: str | None = None
@@ -240,6 +263,12 @@ def _dmcs_from_sparql_json(payload: dict) -> tuple[str, ...]:
     bindings = payload.get("results", {}).get("bindings", [])
     dmcs = [str(row.get("dmc", {}).get("value", "")) for row in bindings]
     return tuple(dict.fromkeys(dmc for dmc in dmcs if dmc))
+
+
+def _compact_predicate(uri: str) -> str:
+    if uri.startswith(f"{BASE_IRI}/"):
+        return f"s1000d:{uri.removeprefix(f'{BASE_IRI}/')}"
+    return uri
 
 
 def _family(target: str | None) -> str | None:

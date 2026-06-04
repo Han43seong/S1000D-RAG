@@ -63,3 +63,30 @@ def test_evidence_strength_badge_classifies_mid_and_low_scores():
 
     assert mid["label"] == "근거 적합"
     assert low["label"] == "참고 후보"
+
+
+def test_v4_support_badge_labels_exact_related_and_none():
+    exact = _node_eval("formatV4SupportBadge('exact')")
+    related = _node_eval("formatV4SupportBadge('related')")
+    none = _node_eval("formatV4SupportBadge('none')")
+
+    assert exact["label"] == "근거 직접 확인"
+    assert related["label"] == "관련 근거만"
+    assert none["label"] == "근거 없음"
+    assert "정확도" not in exact["title"]
+
+
+def test_v4_metadata_panel_warns_for_deterministic_fallback_and_lists_trace():
+    html = _node_eval("renderV4MetadataPanel({support_level:'related', runtime_mode:'deterministic_fallback', required_citations:['BRAKE-DESC'], forbidden_claims:['unsupported requested procedure'], ontology_trace:{rdf_related_dmcs:['BRAKE-DESC'], graph_paths:['SPARQL selected BRAKE-DESC']}})")
+
+    assert "관련 근거만" in html
+    assert "직접 절차 근거 없음" in html
+    assert "BRAKE-DESC" in html
+    assert "SPARQL selected BRAKE-DESC" in html
+    assert "unsupported requested procedure" in html
+    assert "v4-metadata" in html
+
+
+def test_v4_metadata_panel_is_empty_without_metadata():
+    assert _node_eval("renderV4MetadataPanel(null)") == ""
+    assert _node_eval("renderV4MetadataPanel({})") == ""

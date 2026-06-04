@@ -1,6 +1,8 @@
+from typing import Any, cast
+
 from langchain_core.documents import Document
 
-from src.rag.ontology import DetailLevel, Intent, ParsedQuery
+from src.rag.ontology import DetailLevel, Intent, ParsedQuery, SupportLevel
 from src.rag.v4.answer_plan import AnswerClaim, AnswerPlan, build_answer_plan
 from src.rag.v4.graph_schema import GraphEdge, GraphNode, NodeType, RelationType
 from src.rag.v4.rdf_resolver import RdfResolution
@@ -45,6 +47,62 @@ def test_v4_answer_plan_maps_claims_to_evidence_and_forbidden_claims():
     assert "unsupported procedure steps" in plan.forbidden_claims
 
 
+def test_v4_answer_plan_splits_claims_and_preserves_evidence_metadata():
+    parsed = ParsedQuery(
+        original="브레이크 작동원리를 정비사가 이해할 수 있게 자세히 설명해줘",
+        normalized="브레이크 작동원리를 정비사가 이해할 수 있게 자세히 설명해줘",
+        intent=Intent.DESCRIBE,
+        target="brake system",
+        detail_level=DetailLevel.DETAILED,
+    )
+    docs = [
+        Document(
+            page_content="Brake cable transmits force from the brake lever to the brake arms. Brake pads press the wheel rim.",
+            metadata={
+                "dmc": "BRAKE-DESC",
+                "title": "Brake system description",
+                "structure_path": "description/para[2]",
+                "source_file": "DMC-BRAKE-DESC.XML",
+            },
+        )
+    ]
+    rdf_resolution = RdfResolution(primary_dmcs=("BRAKE-DESC",), related_dmcs=())
+
+    plan = build_answer_plan(parsed, docs, rdf_resolution=rdf_resolution)
+
+    assert plan.support_level == SupportLevel.EXACT
+    assert [claim.text for claim in plan.claims] == [
+        "Brake cable transmits force from the brake lever to the brake arms.",
+        "Brake pads press the wheel rim.",
+    ]
+    assert all(claim.support_level == SupportLevel.EXACT for claim in plan.claims)
+    assert plan.claims[0].evidence_blocks == ("description/para[2]",)
+    assert plan.claims[0].source_titles == ("Brake system description",)
+    assert plan.claims[0].source_files == ("DMC-BRAKE-DESC.XML",)
+
+
+def test_v4_answer_plan_marks_related_only_procedure_as_unsupported_for_step_synthesis():
+    parsed = ParsedQuery(
+        original="브레이크 케이블 제거 후 재설치 절차 알려줘",
+        normalized="브레이크 케이블 제거 후 재설치 절차 알려줘",
+        intent=Intent.PROCEDURE,
+        target="brake cable",
+        action="remove and install",
+    )
+    docs = [Document(page_content="Brake cable routing is described.", metadata={"dmc": "BRAKE-DESC"})]
+    rdf_resolution = RdfResolution(primary_dmcs=(), related_dmcs=("BRAKE-DESC",))
+
+    plan = build_answer_plan(parsed, docs, rdf_resolution=rdf_resolution)
+
+    assert plan.support_level == SupportLevel.RELATED
+    assert "unsupported requested procedure" in plan.forbidden_claims
+    assert "fabricated step sequence" in plan.forbidden_claims
+    assert any("직접 확인되지 않았습니다" in claim.text for claim in plan.claims)
+    fallback = verbalize_answer_plan(plan)
+    assert fallback.count("Brake cable routing is described.") == 1
+    assert "[관련 근거]" in fallback
+
+
 def test_v4_answer_plan_includes_rdf_primary_and_related_citations():
     parsed = ParsedQuery(
         original="브레이크 패드 청소 절차 알려줘",
@@ -59,6 +117,27 @@ def test_v4_answer_plan_includes_rdf_primary_and_related_citations():
     plan = build_answer_plan(parsed, docs, rdf_resolution=rdf_resolution)
 
     assert plan.required_citations == ("BRAKE-PAD-CLEAN", "BRAKE-DESC")
+
+
+def test_v4_answer_plan_does_not_expand_citations_with_legacy_graph_when_rdf_resolution_exists():
+    parsed = ParsedQuery(
+        original="브레이크 패드 청소 절차 알려줘",
+        normalized="브레이크 패드 청소 절차 알려줘",
+        intent=Intent.PROCEDURE,
+        target="brake pad",
+        action="clean",
+    )
+    docs = [Document(page_content="Clean brake pad with approved material.", metadata={"dmc": "BRAKE-PAD-CLEAN"})]
+    rdf_resolution = RdfResolution(primary_dmcs=("BRAKE-PAD-CLEAN",), related_dmcs=("BRAKE-DESC",))
+
+    class LegacyGraphContext:
+        def related_dmcs_for_target(self, _target):
+            return ("LEGACY-BROAD-DMC", "BRAKE-PAD-CLEAN")
+
+    plan = build_answer_plan(parsed, docs, graph_context=cast(Any, LegacyGraphContext()), rdf_resolution=rdf_resolution)
+
+    assert plan.required_citations == ("BRAKE-PAD-CLEAN", "BRAKE-DESC")
+    assert "LEGACY-BROAD-DMC" not in plan.required_citations
 
 
 def test_v4_answer_plan_includes_rdf_graph_paths_for_explainability():

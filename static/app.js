@@ -144,7 +144,7 @@ async function switchSession(sessionId) {
                 if (msg.role === 'user') {
                     appendUserMessage(msg.content);
                 } else if (msg.role === 'assistant') {
-                    appendAIMessage(msg.content, msg.evidences || [], msg.reference_materials || {}, msg.llm_sec || 0);
+                    appendAIMessage(msg.content, msg.evidences || [], msg.reference_materials || {}, msg.llm_sec || 0, msg.v4_metadata || null);
                 }
             });
         }
@@ -389,7 +389,7 @@ async function sendMessage() {
         updateTypingIndicator(typingId, jobProgressMessage(data));
         const completed = await pollChatJob(data.job_id, typingId);
         removeTypingIndicator(typingId);
-        appendAIMessage(completed.answer || '', completed.evidences || [], completed.reference_materials || {}, completed.llm_sec || 0);
+        appendAIMessage(completed.answer || '', completed.evidences || [], completed.reference_materials || {}, completed.llm_sec || 0, completed.v4_metadata || null);
         await loadSessions();
     } catch (e) {
         removeTypingIndicator(typingId);
@@ -590,7 +590,81 @@ function formatEvidenceStrengthBadge(score) {
     };
 }
 
-function appendAIMessage(text, evidences, referenceMaterials, llmSec) {
+function formatV4SupportBadge(supportLevel) {
+    const normalized = String(supportLevel || '').toLowerCase();
+    const badges = {
+        exact: {
+            label: '근거 직접 확인',
+            className: 'text-success bg-success/10 border-success/20',
+            title: 'RDF/문서 근거에서 요청 대상과 동작을 직접 확인했습니다.',
+        },
+        partial: {
+            label: '부분 근거',
+            className: 'text-amber-700 bg-amber-100 border-amber-200',
+            title: '일부 구조화 근거는 있으나 요청 전체를 직접 충족하지는 않습니다.',
+        },
+        related: {
+            label: '관련 근거만',
+            className: 'text-orange-700 bg-orange-100 border-orange-200',
+            title: '요청과 관련된 문서는 있으나 직접 절차/사실 근거는 확인되지 않았습니다.',
+        },
+        none: {
+            label: '근거 없음',
+            className: 'text-error bg-error/10 border-error/20',
+            title: '현재 검색된 RDF/문서 근거가 없습니다.',
+        },
+    };
+    return badges[normalized] || {
+        label: '근거 수준 미확인',
+        className: 'text-outline bg-surface-container border-outline-variant/20',
+        title: 'v4 근거 수준 metadata가 없거나 알 수 없는 값입니다.',
+    };
+}
+
+function renderV4MetadataPanel(metadata) {
+    if (!metadata || typeof metadata !== 'object' || !metadata.support_level) return '';
+
+    const support = formatV4SupportBadge(metadata.support_level);
+    const runtimeMode = metadata.runtime_mode || 'unknown';
+    const isFallback = runtimeMode === 'deterministic_fallback';
+    const trace = metadata.ontology_trace || {};
+    const traceItems = [];
+    if (trace.intent) traceItems.push(['의도', trace.intent]);
+    if (trace.target) traceItems.push(['대상', trace.target]);
+    if (trace.action) traceItems.push(['동작', trace.action]);
+    if (Array.isArray(trace.rdf_primary_dmcs) && trace.rdf_primary_dmcs.length) traceItems.push(['RDF 직접 DMC', trace.rdf_primary_dmcs.join(', ')]);
+    if (Array.isArray(trace.rdf_related_dmcs) && trace.rdf_related_dmcs.length) traceItems.push(['RDF 관련 DMC', trace.rdf_related_dmcs.join(', ')]);
+    if (Array.isArray(trace.graph_paths) && trace.graph_paths.length) traceItems.push(['Graph path', trace.graph_paths.join(' → ')]);
+
+    const citations = Array.isArray(metadata.required_citations) ? metadata.required_citations : [];
+    const forbidden = Array.isArray(metadata.forbidden_claims) ? metadata.forbidden_claims : [];
+    const metaId = 'v4-' + Date.now() + Math.random().toString(36).slice(2, 6);
+
+    return `
+        <div class="v4-metadata mt-4 bg-surface-container-lowest border border-outline-variant/10 rounded-xl overflow-hidden">
+            <div class="px-4 py-2.5 flex items-center gap-2 flex-wrap text-[13px] text-on-surface-variant">
+                <span class="material-symbols-outlined text-sm">schema</span>
+                <span class="font-semibold text-on-surface">Graph RAG v4</span>
+                <span class="${support.className} border px-2 py-0.5 rounded-full font-bold" title="${escapeHtml(support.title)}">${escapeHtml(support.label)}</span>
+                <span class="bg-surface-container px-2 py-0.5 rounded-full font-semibold">${escapeHtml(runtimeMode)}</span>
+                ${isFallback ? '<span class="text-orange-700 bg-orange-100 px-2 py-0.5 rounded-full font-bold">직접 절차 근거 없음</span>' : ''}
+                <button onclick="toggleEvidence('${metaId}')" class="ml-auto inline-flex items-center gap-1 text-[12px] font-semibold hover:text-primary">
+                    상세 trace
+                    <span class="material-symbols-outlined text-sm evidence-chevron" id="${metaId}-chevron">expand_more</span>
+                </button>
+            </div>
+            <div class="evidence-body" id="${metaId}">
+                <div class="px-4 py-3 border-t border-outline-variant/10 space-y-2 text-[12px] text-on-surface-variant">
+                    ${citations.length ? `<div><span class="font-bold text-on-surface">필수 인용:</span> ${escapeHtml(citations.join(', '))}</div>` : ''}
+                    ${forbidden.length ? `<div><span class="font-bold text-on-surface">금지 claim:</span> ${escapeHtml(forbidden.join(', '))}</div>` : ''}
+                    ${traceItems.length ? traceItems.map(([label, value]) => `<div><span class="font-bold text-on-surface">${escapeHtml(label)}:</span> ${escapeHtml(value)}</div>`).join('') : '<div>상세 ontology trace가 없습니다.</div>'}
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function appendAIMessage(text, evidences, referenceMaterials, llmSec, v4Metadata) {
     const canvas = document.getElementById('chat-canvas');
     const div = document.createElement('div');
     div.className = 'flex items-start gap-4 msg-enter';
@@ -628,6 +702,7 @@ function appendAIMessage(text, evidences, referenceMaterials, llmSec) {
     }
 
     const referenceMaterialsHtml = renderReferenceMaterials(referenceMaterials);
+    const v4MetadataHtml = renderV4MetadataPanel(v4Metadata);
 
     const metricsHtml = llmSec > 0
         ? `<div class="flex items-center gap-3 mt-3 text-[12px] text-outline">
@@ -653,6 +728,7 @@ function appendAIMessage(text, evidences, referenceMaterials, llmSec) {
             </div>
             ${evidenceHtml}
             ${referenceMaterialsHtml}
+            ${v4MetadataHtml}
             ${metricsHtml}
         </div>
     `;
@@ -792,9 +868,12 @@ async function loadConfig() {
 // ══════════════════════════════════════════════════════════════
 
 function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
+    return String(text ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
 }
 
 function showToast(msg) {

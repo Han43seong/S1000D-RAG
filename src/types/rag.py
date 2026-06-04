@@ -69,10 +69,19 @@ class ReferenceMaterials(BaseModel):
     hotspots: list[ReferenceMaterialItem] = Field(default_factory=list)
 
 
+class V4ResponseMetadata(BaseModel):
+    support_level: str = "none"
+    runtime_mode: str = "unknown"
+    required_citations: list[str] = Field(default_factory=list)
+    forbidden_claims: list[str] = Field(default_factory=list)
+    ontology_trace: dict[str, object] = Field(default_factory=dict)
+
+
 class RagResult(BaseModel):
     answer: str
     evidences: list[Evidence]
     reference_materials: ReferenceMaterials = Field(default_factory=ReferenceMaterials)
+    v4_metadata: V4ResponseMetadata | None = None
 
 
 class SessionMeta(BaseModel):

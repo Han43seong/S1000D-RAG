@@ -104,6 +104,27 @@ def test_rdf_store_resolves_parsed_query_to_primary_and_related_dmcs():
     assert "WHEEL-INSTALL" not in result.related_dmcs
 
 
+def test_rdf_resolution_graph_paths_show_actual_matched_entities_not_only_requested_target():
+    store = RdfOntologyStore.from_nodes(_sample_nodes())
+    parsed = ParsedQuery(
+        original="브레이크 케이블 제거 후 재설치 절차 알려줘",
+        normalized="브레이크 케이블 제거 후 재설치 절차 알려줘",
+        intent=Intent.PROCEDURE,
+        target="brake cable",
+        action="remove and install",
+    )
+
+    result = store.resolve_query(parsed)
+
+    assert result.primary_dmcs == ()
+    assert "BRAKE-DESC" in result.related_dmcs
+    assert any(
+        "<https://example.org/s1000d/dm/BRAKE-DESC> -[s1000d:describes]-> <https://example.org/s1000d/entity/brake-system>" == path
+        for path in result.graph_paths
+    )
+    assert all("brake-cable <- s1000d:describes <-" not in path for path in result.graph_paths)
+
+
 def test_turtle_export_round_trips_through_rdflib_parser_and_sparql():
     graph = Graph()
     graph.parse(data=export_ontology_turtle(_sample_nodes()), format="turtle")
@@ -127,6 +148,26 @@ def test_rdflib_store_resolves_with_local_sparql_backend():
 
     assert store.find_procedure_dmcs("brake pad", "clean") == ("BRAKE-PAD-CLEAN",)
     assert store.find_descriptive_dmcs("brake system") == ("BRAKE-DESC",)
+
+
+def test_rdflib_resolution_graph_paths_show_actual_matched_triples():
+    store = RdflibOntologyStore.from_nodes(_sample_nodes())
+    parsed = ParsedQuery(
+        original="브레이크 케이블 제거 후 재설치 절차 알려줘",
+        normalized="브레이크 케이블 제거 후 재설치 절차 알려줘",
+        intent=Intent.PROCEDURE,
+        target="brake cable",
+        action="remove and install",
+    )
+
+    result = store.resolve_query(parsed)
+
+    assert "BRAKE-DESC" in result.related_dmcs
+    assert any(
+        "<https://example.org/s1000d/dm/BRAKE-DESC> -[s1000d:describes]-> <https://example.org/s1000d/entity/brake-system>" == path
+        for path in result.graph_paths
+    )
+    assert all(not path.startswith("SPARQL endpoint rdflib://local selected") for path in result.graph_paths)
 
 
 def test_rdf_store_factory_can_select_rdflib_backend():
