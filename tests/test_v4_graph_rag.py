@@ -99,8 +99,10 @@ def test_v4_answer_plan_marks_related_only_procedure_as_unsupported_for_step_syn
     assert "fabricated step sequence" in plan.forbidden_claims
     assert any("직접 확인되지 않았습니다" in claim.text for claim in plan.claims)
     fallback = verbalize_answer_plan(plan)
-    assert fallback.count("Brake cable routing is described.") == 1
-    assert "[관련 근거]" in fallback
+    assert "직접 확인되지 않았습니다" in fallback
+    assert "Brake cable routing is described" not in fallback
+    assert "[관련 근거]" not in fallback
+    assert "근거 DMC: BRAKE-DESC" in fallback
 
 
 def test_v4_answer_plan_includes_rdf_primary_and_related_citations():
@@ -167,8 +169,9 @@ def test_v4_answer_plan_includes_rdf_graph_paths_for_explainability():
     assert "BRAKE-PAD-CLEAN -[s1000d:hasTarget]-> brake pad" in prompt
     assert "AnswerPlan을 재출력하지 마세요" in prompt
     assert "최종 답변만 한국어로 작성하세요" in prompt
-    assert "[온톨로지 선택 근거]" in fallback
-    assert "BRAKE-DESC -[s1000d:describes]-> brake system" in fallback
+    assert "[온톨로지 선택 근거]" not in fallback
+    assert "BRAKE-DESC -[s1000d:describes]-> brake system" not in fallback
+    assert "근거 DMC: BRAKE-PAD-CLEAN, BRAKE-DESC" in fallback
 
 
 def test_v4_verbalizer_uses_llm_for_synthesis_but_keeps_grounding_contract():
@@ -390,4 +393,79 @@ def test_v4_verbalizer_rewrites_brake_system_descriptive_evidence_to_korean():
     assert "문서에 확인된 해당 절차 항목" not in answer
     assert "The brake system" not in answer
     assert "A cable that goes" not in answer
+    assert "근거 DMC: BRAKE-AAA-DA1-00-00-00AA-041A-A" in answer
+
+
+def test_v4_verbalizer_is_composer_first_and_llm_polishes_korean_draft_only():
+    plan = AnswerPlan(
+        query="브레이크 시스템 원리에 대해 설명해줘",
+        intent=Intent.DESCRIBE,
+        detail_level=DetailLevel.DETAILED,
+        audience="technician",
+        claims=(
+            AnswerClaim(
+                text="The brake system has these primary components: the brake lever the brake cable the brake arm the brake clamp also known as callipers the brake pads.",
+                evidence_dmcs=("BRAKE-AAA-DA1-00-00-00AA-041A-A",),
+            ),
+            AnswerClaim(
+                text="A cable that goes from the brake levers on the handlebars pulls the two levers on the brakes together.",
+                evidence_dmcs=("BRAKE-AAA-DA1-00-00-00AA-041A-A",),
+            ),
+        ),
+        required_citations=("BRAKE-AAA-DA1-00-00-00AA-041A-A",),
+        forbidden_claims=("unsupported procedure steps",),
+        sections=("구성 관계", "작동 흐름", "근거 문서"),
+    )
+
+    class PolishLLM:
+        def __init__(self):
+            self.prompt = ""
+
+        def invoke(self, prompt):
+            self.prompt = prompt
+            assert "한국어 초안:" in prompt
+            assert "브레이크 시스템은 브레이크 레버" in prompt
+            assert "허용된 원문 claim" in prompt
+            return "브레이크 시스템은 레버와 케이블을 통해 제동력을 전달하고, 패드가 림을 눌러 속도를 줄입니다."
+
+    llm = PolishLLM()
+    answer = verbalize_answer_plan(plan, llm=llm)
+
+    assert answer.startswith("브레이크 시스템은 레버와 케이블")
+    assert "근거 DMC: BRAKE-AAA-DA1-00-00-00AA-041A-A" in answer
+    assert "AnswerPlan" not in llm.prompt
+    assert "required citations" not in llm.prompt
+    assert "[DMC:" not in llm.prompt
+    assert "The brake system" in llm.prompt
+    assert "The brake system" not in answer
+
+
+def test_v4_verbalizer_rejects_bad_llm_polish_and_returns_composer_draft():
+    plan = AnswerPlan(
+        query="브레이크 시스템 원리에 대해 설명해줘",
+        intent=Intent.DESCRIBE,
+        detail_level=DetailLevel.DETAILED,
+        audience="technician",
+        claims=(
+            AnswerClaim(
+                text="The brake system has these primary components: the brake lever the brake cable the brake arm the brake clamp also known as callipers the brake pads.",
+                evidence_dmcs=("BRAKE-AAA-DA1-00-00-00AA-041A-A",),
+            ),
+        ),
+        required_citations=("BRAKE-AAA-DA1-00-00-00AA-041A-A",),
+        forbidden_claims=("unsupported procedure steps",),
+        sections=("구성 관계", "근거 문서"),
+    )
+
+    class BadPolishLLM:
+        def invoke(self, _prompt):
+            return "AnswerPlan: The brake system has these primary components. [DMC: BRAKE-AAA-DA1-00-00-00AA-041A-A]"
+
+    answer = verbalize_answer_plan(plan, llm=BadPolishLLM())
+
+    assert answer.startswith("브레이크 시스템에 대해")
+    assert "브레이크 레버" in answer
+    assert "The brake system" not in answer
+    assert "AnswerPlan" not in answer
+    assert "[DMC:" not in answer
     assert "근거 DMC: BRAKE-AAA-DA1-00-00-00AA-041A-A" in answer

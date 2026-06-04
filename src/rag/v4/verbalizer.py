@@ -8,15 +8,44 @@ from .answer_plan import AnswerPlan
 
 
 def verbalize_answer_plan(plan: AnswerPlan, llm: Any | None = None) -> str:
-    prompt = build_verbalizer_prompt(plan)
+    draft = _korean_user_fallback(plan)
     if llm is not None:
+        prompt = build_polish_prompt(plan, draft)
         response = llm.invoke(prompt)
         text = getattr(response, "content", response)
-        answer = _clean_llm_answer(str(text).strip())
-        if answer:
-            answer = _ensure_korean_user_answer(answer, plan)
-            return _ensure_citations(answer, plan.required_citations)
-    return _deterministic_fallback(plan)
+        polished = _clean_llm_answer(str(text).strip())
+        if _is_acceptable_user_answer(polished):
+            return _ensure_citations(polished, plan.required_citations)
+    return _ensure_citations(draft, plan.required_citations)
+
+
+def build_polish_prompt(plan: AnswerPlan, korean_draft: str) -> str:
+    claims = "\n".join("- " + re.sub(r"\s+", " ", claim.text).strip() for claim in plan.claims)
+    graph_paths = "\n".join(f"- {path}" for path in plan.graph_paths)
+    return f"""당신은 S1000D 정비지원 답변 문장을 다듬는 한국어 편집자입니다.
+
+아래 한국어 초안을 사용자에게 자연스럽게 보이도록 문장만 다듬으세요.
+새로운 사실, 절차, 공구, 안전 경고를 추가하지 마세요.
+원문 claim에 없는 내용을 만들지 마세요.
+DMC 목록은 본문에 반복하지 마세요. 시스템이 마지막에 자동으로 붙입니다.
+영어 원문, 내부 metadata, 내부 계획명, 대괄호 형식 근거를 출력하지 마세요.
+최종 답변 본문만 한국어로 작성하세요.
+
+질문: {plan.query}
+의도: {plan.intent.value}
+지원 수준: {plan.support_level.value}
+금지 사항: {', '.join(plan.forbidden_claims)}
+근거 DMC 목록: {', '.join(plan.required_citations) or '없음'}
+
+한국어 초안:
+{korean_draft}
+
+허용된 원문 claim:
+{claims or '- 없음'}
+
+그래프 선택 근거:
+{graph_paths or '- 없음'}
+"""
 
 
 def build_verbalizer_prompt(plan: AnswerPlan) -> str:
@@ -107,9 +136,29 @@ def _clean_llm_answer(answer: str) -> str:
 
 def _ensure_korean_user_answer(answer: str, plan: AnswerPlan) -> str:
     body = re.sub(r"근거 DMC:.*", "", answer).strip()
-    if _contains_hangul(body) and not _looks_like_english_evidence_dump(body):
+    if _is_acceptable_user_answer(body):
         return answer
     return _korean_user_fallback(plan)
+
+
+def _is_acceptable_user_answer(answer: str) -> bool:
+    if not answer.strip():
+        return False
+    forbidden = (
+        "AnswerPlan",
+        "required citations",
+        "forbidden claims",
+        "허용된 claims",
+        "RDF graph paths",
+        "[DMC:",
+        "support:",
+        "titles:",
+        "Okay",
+        "let me think",
+    )
+    if any(marker in answer for marker in forbidden):
+        return False
+    return _contains_hangul(answer) and not _looks_like_english_evidence_dump(answer)
 
 
 def _contains_hangul(text: str) -> bool:
