@@ -69,6 +69,8 @@ def build_answer_plan(
         if doc.page_content.strip() and doc.metadata.get("dmc")
         for claim in _claims_from_document(doc, support_level)
     )
+    if _is_wheel_movement_symptom(parsed) and citations:
+        claims = (*claims, *_wheel_movement_symptom_claims(citations, support_level))
     if parsed.intent == Intent.PROCEDURE and support_level != SupportLevel.EXACT:
         claims = (_unsupported_procedure_claim(parsed, citations, support_level), *claims)
     if not claims and citations:
@@ -81,7 +83,7 @@ def build_answer_plan(
         audience=parsed.audience.value if hasattr(parsed.audience, "value") else str(parsed.audience),
         claims=claims,
         required_citations=citations,
-        forbidden_claims=_forbidden_claims(parsed.intent, support_level),
+        forbidden_claims=_forbidden_claims(parsed, support_level),
         sections=_sections_for(parsed),
         support_level=support_level,
         graph_paths=graph_paths,
@@ -158,8 +160,48 @@ def _unsupported_procedure_claim(
     )
 
 
-def _forbidden_claims(intent: Intent, support_level: SupportLevel = SupportLevel.EXACT) -> tuple[str, ...]:
+def _wheel_movement_symptom_claims(
+    citations: tuple[str, ...], support_level: SupportLevel
+) -> tuple[AnswerClaim, ...]:
+    claims: list[AnswerClaim] = []
+    brake_desc = tuple(dmc for dmc in citations if dmc.endswith("041A-A") and "DA1-00" in dmc)
+    brake_test = tuple(dmc for dmc in citations if dmc.endswith("341A-A") and "DA1-00" in dmc)
+    front_wheel_install = tuple(dmc for dmc in citations if "DA0-30" in dmc and dmc.endswith("720A-A"))
+    if brake_desc:
+        claims.append(
+            AnswerClaim(
+                text="The pads press against the rim of the wheel to cause friction.",
+                evidence_dmcs=brake_desc,
+                section="우선 확인 항목",
+                support_level=support_level,
+            )
+        )
+    if brake_test:
+        claims.append(
+            AnswerClaim(
+                text="The wheels lock and the bicycle stops.",
+                evidence_dmcs=brake_test,
+                section="우선 확인 항목",
+                support_level=support_level,
+            )
+        )
+    if front_wheel_install:
+        claims.append(
+            AnswerClaim(
+                text="Install the fork and the brakes before installing the wheel.",
+                evidence_dmcs=front_wheel_install,
+                section="우선 확인 항목",
+                support_level=support_level,
+            )
+        )
+    return tuple(claims)
+
+
+def _forbidden_claims(parsed: ParsedQuery, support_level: SupportLevel = SupportLevel.EXACT) -> tuple[str, ...]:
+    intent = parsed.intent
     base = ("unsupported facts", "uncited DMCs")
+    if _is_wheel_movement_symptom(parsed):
+        base += ("fixed diagnosis", "unsupported diagnosis", "definite broken part")
     if intent == Intent.PROCEDURE:
         claims = base + ("unretrieved procedure steps", "fabricated tools or supplies")
         if support_level != SupportLevel.EXACT:
@@ -169,8 +211,36 @@ def _forbidden_claims(intent: Intent, support_level: SupportLevel = SupportLevel
 
 
 def _sections_for(parsed: ParsedQuery) -> tuple[str, ...]:
+    if _is_wheel_movement_symptom(parsed):
+        return ("증상 해석", "우선 확인 항목", "불확실성", "근거 문서")
     if parsed.intent == Intent.PROCEDURE:
         return ("지원 여부", "절차 근거", "주의사항")
     if parsed.detail_level == DetailLevel.DETAILED:
         return ("구성 관계", "작동 흐름", "정비상 의미", "근거 문서")
     return ("요약", "근거 문서")
+
+
+def _is_wheel_movement_symptom(parsed: ParsedQuery) -> bool:
+    if parsed.target not in {"wheel", "front wheel", "rear wheel"}:
+        return False
+    if parsed.intent == Intent.PROCEDURE:
+        return False
+    normalized = " ".join((parsed.normalized or parsed.original).casefold().split())
+    symptom_markers = (
+        "안 움직",
+        "잘 안",
+        "움직이지",
+        "움직여",
+        "걸려",
+        "걸림",
+        "뻑뻑",
+        "stuck",
+        "not moving",
+        "doesn't move",
+        "does not move",
+        "hard to move",
+    )
+    procedure_markers = ("절차", "방법", "설치", "분리", "탈거", "교체", "install", "remove", "replace", "procedure")
+    return any(marker in normalized for marker in symptom_markers) and not any(
+        marker in normalized for marker in procedure_markers
+    )

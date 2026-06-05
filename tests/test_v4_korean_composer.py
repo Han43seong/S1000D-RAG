@@ -83,3 +83,28 @@ def test_korean_composer_preserves_more_procedure_units_than_descriptive_default
     assert "10. 포크가 쉽게 분리되지 않으면 지정된 오일을 사용합니다." in draft
     assert "11. 바퀴를 프레임에서 들어 올려 분리합니다." in draft
     assert "12. 지정 오일이 없으면 요구사항을 만족하는 오일을 사용합니다." in draft
+
+
+def test_korean_composer_answers_symptom_query_as_possible_checks_not_fixed_diagnosis():
+    plan = AnswerPlan(
+        query="바퀴가 잘 안 움직여",
+        intent=Intent.DESCRIBE,
+        detail_level=DetailLevel.NORMAL,
+        audience="technician",
+        claims=(
+            AnswerClaim(text="The pads press against the rim of the wheel to cause friction when the you operate the brake levers.", evidence_dmcs=("BRAKE-DESC",)),
+            AnswerClaim(text="Install the fork and the brakes before installing the wheel.", evidence_dmcs=("WHEEL-INSTALL",)),
+        ),
+        required_citations=("BRAKE-DESC", "WHEEL-INSTALL"),
+        forbidden_claims=("unsupported diagnosis",),
+        sections=("증상 해석", "우선 확인 항목"),
+    )
+
+    draft = compose_korean_draft(plan)
+
+    assert draft.startswith("바퀴가 잘 안 움직이는 증상은 문서 근거상 다음 항목과 관련해 우선 확인할 수 있습니다.")
+    assert "브레이크 패드가 바퀴의 바깥쪽 림을 누릅니다." in draft
+    assert "바퀴를 설치하기 전에 포크와 브레이크가 먼저 장착되어 있는지 확인합니다." in draft
+    assert "문서 근거만으로 특정 고장 원인을 확정할 수는 없습니다." in draft
+    assert "고장났" not in draft
+    assert "교체" not in draft

@@ -5,18 +5,17 @@ from typing import Any
 import re
 
 from .answer_plan import AnswerPlan
+from .grounded_generator import generate_grounded_answer
 from .korean_composer import compose_korean_draft
 
 
 def verbalize_answer_plan(plan: AnswerPlan, llm: Any | None = None) -> str:
     draft = _korean_user_fallback(plan)
     if llm is not None:
-        prompt = build_polish_prompt(plan, draft)
-        response = llm.invoke(prompt)
-        text = getattr(response, "content", response)
-        polished = _clean_llm_answer(str(text).strip())
-        if _is_acceptable_user_answer(polished):
-            return _ensure_citations(polished, plan.required_citations)
+        grounded = generate_grounded_answer(plan, llm)
+        grounded = _clean_llm_answer(grounded)
+        if _is_acceptable_user_answer(grounded):
+            return grounded
     return _ensure_citations(draft, plan.required_citations)
 
 

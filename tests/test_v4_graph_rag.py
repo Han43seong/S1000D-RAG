@@ -1,11 +1,12 @@
+import json
 from typing import Any, cast
 
 from langchain_core.documents import Document
 
-from src.rag.ontology import DetailLevel, Intent, ParsedQuery, SupportLevel
+from src.rag.ontology import DetailLevel, Intent, OntologyNode, ParsedQuery, SupportLevel, parse_query
 from src.rag.v4.answer_plan import AnswerClaim, AnswerPlan, build_answer_plan
 from src.rag.v4.graph_schema import GraphEdge, GraphNode, NodeType, RelationType
-from src.rag.v4.rdf_resolver import RdfResolution
+from src.rag.v4.rdf_resolver import RdfOntologyStore, RdfResolution
 from src.rag.v4.verbalizer import build_verbalizer_prompt, verbalize_answer_plan
 
 
@@ -174,6 +175,69 @@ def test_v4_answer_plan_includes_rdf_graph_paths_for_explainability():
     assert "근거 DMC: BRAKE-PAD-CLEAN, BRAKE-DESC" in fallback
 
 
+def test_v4_wheel_movement_symptom_bridges_to_related_brake_and_wheel_evidence():
+    store = RdfOntologyStore.from_nodes(
+        [
+            OntologyNode(
+                dmc="BRAKE-DESC",
+                title="Brake system - Description",
+                dm_type="descriptive",
+                target="brake system",
+                metadata={"components": ["brake pad"]},
+            ),
+            OntologyNode(
+                dmc="BRAKE-TEST",
+                title="Brake system - Manual test",
+                dm_type="procedural",
+                target="brake system",
+                action="test",
+            ),
+            OntologyNode(
+                dmc="FRONT-WHEEL-INSTALL",
+                title="Front wheel - Install procedures",
+                dm_type="procedural",
+                target="front wheel",
+                action="install",
+            ),
+        ]
+    )
+    parsed = parse_query("바퀴가 잘 안 움직여")
+
+    resolution = store.resolve_query(parsed)
+
+    assert parsed.intent == Intent.DESCRIBE
+    assert parsed.target == "wheel"
+    assert resolution.primary_dmcs == ()
+    assert resolution.related_dmcs == ("BRAKE-DESC", "BRAKE-TEST", "FRONT-WHEEL-INSTALL")
+
+    docs = [
+        Document(
+            page_content="The pads press against the rim of the wheel to cause friction.",
+            metadata={"dmc": "BRAKE-DESC", "title": "Brake system - Description"},
+        ),
+        Document(
+            page_content="The wheels lock and the bicycle stops.",
+            metadata={"dmc": "BRAKE-TEST", "title": "Brake system - Manual test"},
+        ),
+        Document(
+            page_content="Install the fork and the brakes before installing the wheel.",
+            metadata={"dmc": "FRONT-WHEEL-INSTALL", "title": "Front wheel - Install procedures"},
+        ),
+    ]
+    plan = build_answer_plan(parsed, docs, rdf_resolution=resolution)
+    answer = verbalize_answer_plan(plan)
+
+    assert plan.support_level != SupportLevel.NONE
+    assert plan.required_citations == ("BRAKE-DESC", "BRAKE-TEST", "FRONT-WHEEL-INSTALL")
+    assert "unsupported diagnosis" in plan.forbidden_claims
+    assert "브레이크 패드가 바퀴의 바깥쪽 림을 누릅니다." in answer
+    assert "바퀴가 잠기고 자전거가 멈추는지 확인합니다." in answer
+    assert "포크와 브레이크가 먼저 장착되어 있는지 확인합니다." in answer
+    assert "특정 고장 원인을 확정할 수는 없습니다" in answer
+    assert "고장났" not in answer
+    assert "베어링" not in answer
+
+
 def test_v4_verbalizer_uses_llm_for_synthesis_but_keeps_grounding_contract():
     plan = AnswerPlan(
         query="브레이크 작동원리 자세히",
@@ -193,9 +257,19 @@ def test_v4_verbalizer_uses_llm_for_synthesis_but_keeps_grounding_contract():
 
     class FakeLLM:
         def invoke(self, prompt):
+            assert "EvidencePacket" in prompt
+            assert "한국어 초안:" not in prompt
             assert "unsupported procedure steps" in prompt
             assert "BRAKE-AAA-DA1-00-00-00AA-041A-A" in prompt
-            return "브레이크 레버의 힘은 케이블을 통해 브레이크 암으로 전달됩니다.\n근거 DMC: BRAKE-AAA-DA1-00-00-00AA-041A-A"
+            return json.dumps(
+                {
+                    "answer": "브레이크 레버의 힘은 케이블을 통해 브레이크 암으로 전달됩니다.",
+                    "check_items": ["브레이크 레버와 케이블, 브레이크 암 연결 근거를 확인합니다."],
+                    "uncertainty": "",
+                    "used_citations": ["BRAKE-AAA-DA1-00-00-00AA-041A-A"],
+                },
+                ensure_ascii=False,
+            )
 
     answer = verbalize_answer_plan(plan, llm=FakeLLM())
 
@@ -396,7 +470,7 @@ def test_v4_verbalizer_rewrites_brake_system_descriptive_evidence_to_korean():
     assert "근거 DMC: BRAKE-AAA-DA1-00-00-00AA-041A-A" in answer
 
 
-def test_v4_verbalizer_is_composer_first_and_llm_polishes_korean_draft_only():
+def test_v4_verbalizer_prefers_grounded_generation_over_polishing_korean_draft():
     plan = AnswerPlan(
         query="브레이크 시스템 원리에 대해 설명해줘",
         intent=Intent.DESCRIBE,
@@ -423,19 +497,25 @@ def test_v4_verbalizer_is_composer_first_and_llm_polishes_korean_draft_only():
 
         def invoke(self, prompt):
             self.prompt = prompt
-            assert "한국어 초안:" in prompt
-            assert "브레이크 시스템은 브레이크 레버" in prompt
-            assert "허용된 원문 claim" in prompt
-            return "브레이크 시스템은 레버와 케이블을 통해 제동력을 전달하고, 패드가 림을 눌러 속도를 줄입니다."
+            assert "EvidencePacket" in prompt
+            assert "사용자 질문: 브레이크 시스템 원리에 대해 설명해줘" in prompt
+            assert "한국어 초안:" not in prompt
+            assert "문장만 다듬으세요" not in prompt
+            return json.dumps(
+                {
+                    "answer": "브레이크 시스템은 레버와 케이블을 통해 제동력을 전달하고, 패드가 림을 눌러 속도를 줄입니다.",
+                    "check_items": ["브레이크 레버와 케이블의 전달 관계를 확인합니다."],
+                    "uncertainty": "",
+                    "used_citations": ["BRAKE-AAA-DA1-00-00-00AA-041A-A"],
+                },
+                ensure_ascii=False,
+            )
 
     llm = PolishLLM()
     answer = verbalize_answer_plan(plan, llm=llm)
 
     assert answer.startswith("브레이크 시스템은 레버와 케이블")
     assert "근거 DMC: BRAKE-AAA-DA1-00-00-00AA-041A-A" in answer
-    assert "AnswerPlan" not in llm.prompt
-    assert "required citations" not in llm.prompt
-    assert "[DMC:" not in llm.prompt
     assert "The brake system" in llm.prompt
     assert "The brake system" not in answer
 

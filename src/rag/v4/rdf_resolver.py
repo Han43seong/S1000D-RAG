@@ -66,6 +66,8 @@ class RdfOntologyStore:
         primary: tuple[str, ...] = ()
         if parsed.referenced_dmcs:
             primary = parsed.referenced_dmcs
+        elif _is_wheel_movement_symptom(parsed):
+            primary = ()
         elif parsed.intent == Intent.PROCEDURE and parsed.target:
             primary = self.find_procedure_dmcs(parsed.target, parsed.action)
         elif parsed.intent in {Intent.DESCRIBE, Intent.LIST_COMPONENTS, Intent.DOCUMENT_SUMMARY} and parsed.target:
@@ -73,9 +75,22 @@ class RdfOntologyStore:
         elif parsed.target:
             primary = self.related_dmcs_for_target(parsed.target)
 
-        related = tuple(dmc for dmc in self.related_dmcs_for_target(parsed.target) if dmc not in primary)
+        related_source = (
+            self._wheel_movement_symptom_dmcs()
+            if _is_wheel_movement_symptom(parsed)
+            else self.related_dmcs_for_target(parsed.target)
+        )
+        related = tuple(dmc for dmc in related_source if dmc not in primary)
         paths = self._graph_paths_for(parsed.target, primary, related)
         return RdfResolution(primary_dmcs=primary, related_dmcs=related, graph_paths=paths)
+
+    def _wheel_movement_symptom_dmcs(self) -> tuple[str, ...]:
+        """Narrow bridge for generic wheel-stuck symptoms to grounded checks."""
+        dmcs: list[str] = []
+        dmcs.extend(self.find_descriptive_dmcs("brake system"))
+        dmcs.extend(self.find_procedure_dmcs("brake system", "test"))
+        dmcs.extend(self.find_procedure_dmcs("front wheel", "install"))
+        return tuple(dict.fromkeys(dmcs))
 
     def _dmcs_for(self, predicate: str, obj: str) -> tuple[str, ...]:
         dmcs: list[str] = []
@@ -160,6 +175,8 @@ class SparqlEndpointOntologyStore:
         primary: tuple[str, ...] = ()
         if parsed.referenced_dmcs:
             primary = parsed.referenced_dmcs
+        elif _is_wheel_movement_symptom(parsed):
+            primary = ()
         elif parsed.intent == Intent.PROCEDURE and parsed.target:
             primary = self.find_procedure_dmcs(parsed.target, parsed.action)
         elif parsed.intent in {Intent.DESCRIBE, Intent.LIST_COMPONENTS, Intent.DOCUMENT_SUMMARY} and parsed.target:
@@ -167,9 +184,22 @@ class SparqlEndpointOntologyStore:
         elif parsed.target:
             primary = self.related_dmcs_for_target(parsed.target)
 
-        related = tuple(dmc for dmc in self.related_dmcs_for_target(parsed.target) if dmc not in primary)
+        related_source = (
+            self._wheel_movement_symptom_dmcs()
+            if _is_wheel_movement_symptom(parsed)
+            else self.related_dmcs_for_target(parsed.target)
+        )
+        related = tuple(dmc for dmc in related_source if dmc not in primary)
         paths = tuple(f"SPARQL endpoint {self.endpoint} selected {dmc}" for dmc in (*primary, *related))
         return RdfResolution(primary_dmcs=primary, related_dmcs=related, graph_paths=paths)
+
+    def _wheel_movement_symptom_dmcs(self) -> tuple[str, ...]:
+        """Narrow bridge for generic wheel-stuck symptoms to grounded checks."""
+        dmcs: list[str] = []
+        dmcs.extend(self.find_descriptive_dmcs("brake system"))
+        dmcs.extend(self.find_procedure_dmcs("brake system", "test"))
+        dmcs.extend(self.find_procedure_dmcs("front wheel", "install"))
+        return tuple(dict.fromkeys(dmcs))
 
     def _query_endpoint(self, query: str) -> dict:
         payload = query.encode("utf-8")
@@ -306,3 +336,33 @@ def _family(target: str | None) -> str | None:
     if target in {"wheel", "front wheel", "rear wheel", "tire"}:
         return "wheel"
     return target
+
+
+def _is_wheel_movement_symptom(parsed: ParsedQuery) -> bool:
+    """Return True for wheel movement symptom reports, not procedure requests."""
+    if parsed.target not in {"wheel", "front wheel", "rear wheel"}:
+        return False
+    if parsed.intent == Intent.PROCEDURE:
+        return False
+    normalized = " ".join((parsed.normalized or parsed.original).casefold().split())
+    wheel_markers = ("바퀴", "앞바퀴", "뒷바퀴", "휠", "wheel", "wheels")
+    symptom_markers = (
+        "안 움직",
+        "잘 안",
+        "움직이지",
+        "움직여",
+        "걸려",
+        "걸림",
+        "뻑뻑",
+        "stuck",
+        "not moving",
+        "doesn't move",
+        "does not move",
+        "hard to move",
+    )
+    procedure_markers = ("절차", "방법", "설치", "분리", "탈거", "교체", "install", "remove", "replace", "procedure")
+    return (
+        any(marker in normalized for marker in wheel_markers)
+        and any(marker in normalized for marker in symptom_markers)
+        and not any(marker in normalized for marker in procedure_markers)
+    )
