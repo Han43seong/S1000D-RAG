@@ -28,7 +28,7 @@ S1000D DM XML
   → retrieve_evidence    (Graph-first → Vector fallback → bge-reranker-v2-m3 리랭킹)
   → build_answer_plan    (AnswerPlan: claims + evidence + 금지 주장)
   → verbalize_answer_plan (로컬 LLM GGUF → 한국어 설명)
-  → quality_gate         (DMC 그라운딩 · 지원 수준 · 안전 경고 보존 검증)
+  → 품질 검증            (DMC 그라운딩 · 지원 수준 · 안전 경고 보존; v4는 support_level + grounding fallback)
   → RagResult(answer, evidences, reference_materials)
                                             ↑ pipeline_v4.py
 ```
