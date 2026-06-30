@@ -1,342 +1,105 @@
 # S1000D-RAG
 
-S1000D technical-manual chatbot project for closed-network maintenance support.
+![Python](https://img.shields.io/badge/Python-3.11%2B-blue)
 
-This repository is a portfolio project that explores how to build a reliable AI assistant over S1000D Data Module XML manuals. The project started as a basic vector RAG chatbot, exposed the limits of generic RAG on structured maintenance manuals, and is now being redesigned toward an RDF/OWL-based ontology-guided Graph RAG + LLM reasoning architecture.
-
----
-
-## 1. Project in one minute
-
-**Problem:**
-
-Technical maintenance manuals such as S1000D are not ordinary text documents. They contain structured Data Module Codes(DMC), document types, procedures, warnings, figures, applicability, references, and system/component relationships. A basic vector search chatbot can retrieve similar text, but it often fails to understand whether a question is asking for a procedure, a component explanation, a DMC lookup, a partial match, or an unsupported maintenance action.
-
-**Goal:**
-
-Build an on-prem / closed-network AI maintenance assistant that can answer Korean user questions over S1000D manuals while preserving source grounding, DMC evidence, procedure safety, and technical-document structure.
-
-**Current direction:**
-
-```text
-Vector-only RAG
-→ ontology-aware RAG
-→ deterministic ontology-first RAG
-→ RDF/OWL-based ontology-guided Graph RAG + LLM synthesis + quality gate
-```
-
-**Final target:**
-
-An RDF/OWL-based ontology-guided Graph RAG chatbot where:
-
-- RDF/OWL knowledge graph is the canonical ontology representation;
-- SPARQL/GraphDB-compatible retrieval controls entities, DMCs, document relationships, and support level;
-- Vector DB is used as a constrained chunk-level evidence retriever inside graph-selected S1000D data modules;
-- RAG retrieves exact source evidence from S1000D XML/chunks;
-- LLM synthesizes user-friendly Korean explanations from structured evidence;
-- quality gates reject unsupported procedures, hallucinated tools/steps, malformed citations, and unsafe answers.
+S1000D DM XML 기술 매뉴얼을 대상으로 한 **폐쇄망 로컬 LLM RAG 파이프라인**. 한국어 질의에 S1000D 구조(DMC, 절차, 경고, 적용성)를 보존하며 출처 근거 기반 답변을 생성한다.
 
 ---
 
-## 2. Why this project matters
+## 목적
 
-Generic RAG often looks good in demos but breaks on technical maintenance manuals because retrieval similarity is not the same as operational correctness.
-
-This project focuses on questions such as:
-
-```text
-브레이크 작동원리를 자세히 설명해줘
-브레이크 패드 청소 절차 알려줘
-브레이크 케이블 제거 후 다시 설치하는 절차가 있나?
-바퀴 교체 방법 알려줘
-앞에서 알려준 문서 내용은 뭔데?
-```
-
-A useful assistant must distinguish:
-
-- exact procedure vs related procedure;
-- description document vs maintenance procedure;
-- component relationship vs step-by-step instruction;
-- direct DMC lookup vs conversational follow-up;
-- supported answer vs unsupported action;
-- answer text vs evidence/reference materials.
-
-That is why the project evolved beyond simple vector search.
+S1000D 기술 문서는 DMC, 절차 단계, warning/caution, 도해, 적용성 같은 구조 정보를 담고 있어 일반 벡터 RAG로는 "절차인지 설명인지", "지원되는 작업인지 아닌지"를 구분하기 어렵다. 이 프로젝트는 온톨로지가 **무엇을 말할 수 있는지를 통제**하고, RAG가 **출처 증거를 검색**하며, LLM이 **증거를 한국어로 합성**하는 파이프라인을 구현한다. 인터넷 연결 없이 완전히 온프레미스로 동작한다.
 
 ---
 
-## 3. Architecture evolution
+## 원리 / 동작 방식
 
-The most important part of this repository is not only the current code, but the recorded engineering evolution.
+```
+S1000D DM XML
+  → dm_parser.py  (lxml, descriptive / procedure / generic 타입별 파싱)
+  → chunker.py    (ContentBlock 슬라이딩 윈도우, warning/caution 독립 청크)
+  → ChromaDB      (BAAI/bge-m3 임베딩, chroma_db_full/)
+                                            ↑ ingest.py
 
-| Version | Architecture | What it tried to solve | Why it was not final |
-| --- | --- | --- | --- |
-| **v1** | Basic Vector DB RAG | Parse S1000D XML, index chunks in Chroma, retrieve by embeddings, answer with local LLM | Correct chunks could be retrieved but the local LLM produced malformed Korean, repeated DMCs, and unsupported claims. There was no strong support-level model. |
-| **v2** | Vector RAG + partial ontology concepts | Add DMC/SNS/graph hints, reranking, Korean aliases, and guard rules | Became patch-heavy. Ontology metadata existed but did not control the pipeline as the source of truth. |
-| **v3** | Deterministic ontology-first RAG | Parse query intent/target/action, resolve ontology metadata, plan evidence, compose deterministic Korean answers | Fast and stable, but LLM reasoning is mostly unused. It is an excellent baseline, not the final chatbot architecture. |
-| **v4** | RDF/OWL-based ontology-guided Graph RAG + LLM synthesis | Full target: RDF/OWL canonical ontology, SPARQL/GraphDB-compatible document selection, source-grounded LLM synthesis, and quality gates | Current roadmap / active implementation target. |
+질의
+  → parse_query          (intent / target / action 추출)
+  → resolve_ontology     (RDF/OWL 온톨로지 매니페스트 → DMC 매핑)
+  → plan_evidence        (primary/related/warning/figure 플랜)
+  → retrieve_evidence    (Graph-first → Vector fallback → bge-reranker-v2-m3 리랭킹)
+  → build_answer_plan    (AnswerPlan: claims + evidence + 금지 주장)
+  → verbalize_answer_plan (로컬 LLM GGUF → 한국어 설명)
+  → quality_gate         (DMC 그라운딩 · 지원 수준 · 안전 경고 보존 검증)
+  → RagResult(answer, evidences, reference_materials)
+                                            ↑ pipeline_v4.py
+```
 
-Detailed history:
-
-- `docs/retrospectives/rag-evolution-v1-to-v4.md`
-- `docs/retrospectives/rag-v1-failure-analysis.md`
-- `docs/plans/ontology-guided-graph-rag-v4.md`
-- `docs/plans/ontology-first-rag-v2-rewrite.md`
+파이프라인은 v1(순수 벡터 RAG) → v2(부분 온톨로지 힌트) → v3(결정론적 온톨로지 우선) → **v4(RDF/OWL Graph RAG + LLM 합성)** 순으로 진화했다. `src/rag/pipeline.py`(v3 baseline)와 `src/rag/pipeline_v4.py`(v4 target) 모두 유지된다.
 
 ---
 
-## 4. Current runtime state
+## 주요 기능
 
-The current runtime is **v4 RDF/AnswerPlan reference-complete** for the S1000D portfolio scope. Earlier v3 deterministic ontology-first behavior remains available as the stable baseline, but the latest v4 path adds RDF/RDFLib/SPARQL-compatible ontology resolution, structured AnswerPlan synthesis, citation/support metadata, graph-path explainability, and UI/API metadata exposure.
-
-High-level flow:
-
-```text
-User question
-  ↓
-parse_query
-  ↓
-load_ontology_manifest
-  ↓
-resolve_ontology
-  ↓
-plan_evidence
-  ↓
-retrieve_evidence
-  ↓
-compose_answer
-  ↓
-quality_gate
-  ↓
-answer + evidences + reference materials
-```
-
-This runtime is intentionally fast and stable because the answer composer can produce known technical-document answers without relying on local LLM token generation for every request.
-
-Current strengths:
-
-- fast responses after model/index warm-up;
-- lower hallucination risk;
-- explicit DMC grounding;
-- exact/partial/unsupported answer patterns;
-- stable demo behavior;
-- UI separation of answer, evidence, and reference materials.
-
-Closure notes:
-
-- v4 is complete as a reference implementation, not as a production GraphDB deployment;
-- deterministic domain-specific responses intentionally remain for stable demos and safety fallbacks;
-- true enterprise operation would require a production corpus, permission model, deployment hardening, and larger-scale graph/index operations;
-- the next product direction is an internal business-document chatbot, so no further S1000D/MRO-specific guard expansion is planned.
+| 모듈 | 기능 |
+|---|---|
+| `ingest.py` | DM XML 디렉터리 스캔 → 파싱 → ChromaDB 인덱싱 CLI |
+| `query.py` | 단일·대화형 RAG 질의 CLI |
+| `app_web.py` | FastAPI 백엔드 (WinneAI), Material Design 3 정적 프론트엔드 |
+| `app.py` | Streamlit 질의 UI |
+| `src/parser/dm_parser.py` | S1000D XML → `ContentBlock` 변환 (절차·설명·경고·테이블·도해 참조) |
+| `src/chunker/chunker.py` | 슬라이딩 윈도우 청킹, warning/caution 별도 분리 |
+| `src/rag/pipeline_v4.py` | Ontology-guided Graph RAG v4 (RDF/SPARQL, AnswerPlan, 품질 게이트) |
+| `src/vlm/` | VLM(Qwen3-VL) 기반 도해 캡셔닝, 멀티모달 컨텍스트 브리지 |
+| `scripts/export_ontology_rdf.py` | 온톨로지 매니페스트 → Turtle / JSON-LD 내보내기 |
 
 ---
 
-## 5. Reference-complete v4 ontology-guided Graph RAG
-
-The reference architecture is not “LLM over chunks.” It is a controlled neuro-symbolic pipeline:
-
-```text
-User Question
-  ↓
-Ontology Query Parser
-  - intent
-  - target/component/system
-  - action
-  - detail_level
-  - audience
-  - follow-up references
-  ↓
-Knowledge Graph Resolver
-  - exact DMCs
-  - partial/related DMCs
-  - component/system/procedure relationships
-  - support level
-  ↓
-Evidence Planner
-  - primary source documents
-  - related documents
-  - warnings/cautions
-  - figures/captions
-  - tools/supplies/internal references
-  ↓
-Retrieval Layer
-  - DMC direct lookup
-  - graph-expanded metadata retrieval
-  - vector search
-  - keyword/BM25 search where useful
-  - reranking
-  ↓
-Structured Answer Plan
-  - claims
-  - evidence per claim
-  - required citations
-  - forbidden unsupported claims
-  ↓
-LLM Verbalizer
-  - grounded Korean explanation
-  - detail-level adaptation
-  - no unsupported facts
-  ↓
-Quality Gate
-  - DMC grounding
-  - support-level correctness
-  - warning/caution preservation
-  - no fabricated procedures/tools
-  - clean answer/reference/UI separation
-```
-
-Core principle:
-
-```text
-The ontology controls what can be said.
-RAG retrieves the source evidence.
-The LLM explains the evidence.
-The quality gate decides whether the answer is safe to show.
-```
-
-Current RDF/OWL transition utilities:
+## 설치 & 사용법
 
 ```bash
-# Export the ontology manifest as Turtle/JSON-LD for GraphDB/Fuseki-compatible loading.
-python scripts/export_ontology_rdf.py --output data/ontology/s1000d.ttl
-python scripts/export_ontology_rdf.py --format jsonld --output data/ontology/s1000d.jsonld
+# 1. 의존성 설치
+poetry install
+# 또는
+uv sync
 
-# Validate the ontology manifest against local SHACL-like shape rules.
-python scripts/validate_ontology_shapes.py
+# 2. 환경 설정 (.env)
+cp .env.example .env
+# .env에서 S1000D_TEXT_MODEL_PATH, S1000D_DATA_DIR 등 설정
 
-# Run v4 locally with the in-memory RDF resolver.
-S1000D_RAG_PIPELINE=v4 python query.py "브레이크 작동원리를 자세히 설명해줘"
+# 3. XML 인덱싱
+python ingest.py                  # S1000D_DATA_DIR 하위 DM XML 전체 인덱싱
+python ingest.py --data-dir /path/to/xmls --limit 50
 
-# Run v4 through the local RDFLib parser/SPARQL backend.
-S1000D_RAG_PIPELINE=v4 \
-S1000D_RDF_BACKEND=rdflib \
-python query.py "브레이크 패드 청소 절차 알려줘"
+# 4. CLI 질의
+python query.py "브레이크 패드 교체 절차 알려줘"
+python query.py                   # 대화형 모드
 
-# Optional external backend: route v4 RDF resolution to a SPARQL endpoint.
-# If the endpoint is unavailable, v4 falls back to the local in-memory RDF store
-# and records the fallback in ontology_trace.graph_paths.
-S1000D_RAG_PIPELINE=v4 \
-S1000D_SPARQL_ENDPOINT=http://localhost:7200/repositories/s1000d \
-python query.py "브레이크 패드 청소 절차 알려줘"
+# 5. 웹 서버
+uvicorn app_web:app --host 0.0.0.0 --port 8000 --reload
+# http://localhost:8000
+
+# 6. Streamlit UI
+streamlit run app.py
 ```
 
 ---
 
-## 6. Representative demo questions
+## 요구사항 / 의존성
 
-Useful interview/demo questions:
-
-```text
-브레이크 작동원리를 자세히 설명해줘
-브레이크 시스템의 주요 구성품 알려줘
-브레이크 패드 청소 절차 알려줘
-브레이크 케이블 제거 후 다시 설치하는 절차가 있나?
-바퀴 교체 방법 알려줘
-앞바퀴 설치 절차 알려줘
-체인에 오일 바르는 방법 알려줘
-조명 시스템 점검 방법 알려줘
-앞에서 알려준 문서 내용은 뭔데?
-```
-
-These questions are intentionally chosen because they test more than semantic similarity:
-
-- operation principle explanation;
-- component listing;
-- exact procedure retrieval;
-- unsupported or related procedure handling;
-- partial support reasoning;
-- subsystem routing;
-- conversational evidence memory;
-- DMC citation quality.
+- **Python** ≥ 3.11, < 3.13
+- **로컬 GGUF 모델** — `models/` 디렉토리에 배치, `.env`의 `S1000D_TEXT_MODEL_PATH` 지정
+  - 기본 프로파일: `qwen36_27b_iq4` (16 GB VRAM), 경량: `qwen3_8b_q5`
+- **VLM** (선택) — `S1000D_VLM_MODEL_PATH` + `S1000D_VLM_MMPROJ_PATH`
+- 주요 패키지: `llama-cpp-python`, `sentence-transformers` (bge-m3), `chromadb`, `langchain`, `lxml`, `rdflib`, `fastapi`
 
 ---
 
-## 7. Repository guide
+## 주요 변경 이력
 
-Key documentation:
-
-```text
-docs/architecture.md
-  Original S1000D local RAG architecture and XML/chunking design.
-
-docs/retrospectives/rag-v1-failure-analysis.md
-  Detailed analysis of vector/guard-heavy RAG failures.
-
-docs/retrospectives/rag-evolution-v1-to-v4.md
-  Portfolio narrative explaining v1 → v2 → v3 → v4.
-
-docs/plans/ontology-first-rag-v2-rewrite.md
-  Earlier rewrite plan that led to the current deterministic ontology-first baseline.
-
-docs/plans/ontology-guided-graph-rag-v4.md
-  Final target architecture and implementation roadmap.
-
-docs/local_model_stack.md
-  Local GGUF/embedding/reranker/VLM model stack and environment setup notes.
-
-docs/demo_golden_questions.md
-  Demo and regression question set.
-```
-
-Key runtime/code areas:
-
-```text
-app_web.py
-  FastAPI web app entrypoint.
-
-query.py
-  CLI query entrypoint.
-
-src/rag/pipeline_v2.py
-  Current ontology-first runtime path, best understood as v3 baseline.
-
-src/rag/ontology/
-  Query parsing, ontology schema, resolver, evidence planning, answer composer, quality gate.
-
-src/rag/pipeline.py
-  Legacy guard-heavy pipeline. Should not be expanded for future product behavior.
-```
-
----
-
-## 8. Local model / closed-network emphasis
-
-This project is designed with closed-network/on-prem deployment in mind.
-
-Local stack includes:
-
-- GGUF text LLM through llama.cpp / llama-cpp-python;
-- local BGE embedding model;
-- local reranker;
-- Chroma vector database;
-- optional local VLM assets for future figure/graphic understanding;
-- no dependency on public cloud inference for core operation.
-
-This matters for defense, MRO, manufacturing, and technical support scenarios where maintenance manuals, procedures, and equipment data cannot be sent to external APIs.
-
----
-
-## 9. Engineering lessons highlighted by this project
-
-1. A full vector index does not guarantee a correct technical assistant.
-2. S1000D structure is a retrieval control signal, not just metadata.
-3. “Not found” must be based on support-level reasoning, not only vector score thresholds.
-4. Guard rules can stabilize demos but become technical debt if they replace domain modeling.
-5. Local LLMs need structured evidence plans and quality gates.
-6. Ontology and graph relationships are the right control plane for technical-document RAG.
-7. The final system should combine symbolic control with neural language generation.
-
----
-
-## 10. Current status
-
-Current project status:
-
-```text
-Current stable direction: v3 deterministic ontology-first baseline
-Final implementation target: v4 ontology-guided Graph RAG + LLM synthesis
-Portfolio narrative: documented
-Next engineering milestone: implement v4 graph schema, answer planner, LLM verbalizer, and stronger quality gate
-```
-
-The project should be evaluated as an evolving engineering system: the earlier approaches are preserved as documented lessons, and the current roadmap explicitly targets a more rigorous ontology-guided LLM chatbot architecture.
+| 날짜 | 내용 |
+|---|---|
+| 2026-03-13 | 프로젝트 초기 설정 — S1000D RAG 파이프라인 스캐폴딩 |
+| 2026-03-23 | 핵심 RAG 파이프라인 구현 (Phase 3–8) + CLI 도구(`ingest`, `query`, `export_index`) + 테스트 스위트 + FastAPI · Streamlit UI |
+| 2026-06-01 | 멀티모달 지원 추가 — VLM 캡셔닝, 비주얼 에셋 매니페스트, 웹 채팅 잡 진행 상태 |
+| 2026-06-03 | S1000D 온톨로지 RDF 내보내기, 그래프 기반 검색 QA 루프, 온톨로지 인식 QA 강화 |
+| 2026-06-04 | v4 RDF/OWL 온톨로지 레이어 및 Graph RAG 런타임 구현 (`pipeline_v4.py`, rdflib 백엔드) |
+| 2026-06-05 | v4 한국어 증상 답변 그라운딩 완성 및 검증 (Korean composer, grounded verbalizer) |
